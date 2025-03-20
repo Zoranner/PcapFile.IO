@@ -156,7 +156,8 @@ namespace KimoTech.PcapFile.IO.Test
 
                 // 验证文件大小
                 var pcapFileInfo = new FileInfo(filePath);
-                var pataDirectory = Path.Combine(Path.GetDirectoryName(filePath), "Packet_Data");
+                var directory = Path.GetDirectoryName(filePath) ?? AppContext.BaseDirectory;
+                var pataDirectory = Path.Combine(directory, "Packet_Data");
                 var pataFilePath = Path.Combine(pataDirectory, "data_001.pata");
                 var pataFileInfo = new FileInfo(pataFilePath);
                 var totalFileSize = pcapFileInfo.Length + pataFileInfo.Length;
