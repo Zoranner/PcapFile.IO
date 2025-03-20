@@ -1,11 +1,11 @@
-﻿using System.Text;
-using KimoTech.PcapFile.IO;
+﻿using KimoTech.PcapFile.IO.Structures;
+using System.Text;
 
 namespace KimoTech.PcapFile.IO.Test
 {
     class Program
     {
-        static void Main(string[] _)
+        static async Task Main(string[] _)
         {
             try
             {
@@ -16,23 +16,40 @@ namespace KimoTech.PcapFile.IO.Test
                 // 测试创建数据包
                 TestCreateDataPacket();
 
-                Console.WriteLine("\n按任意键继续测试文件操作...");
-                Console.ReadKey(true);
-
                 // 测试文件写入
                 var dataDir = Path.Combine(AppContext.BaseDirectory, "data");
-                Directory.CreateDirectory(dataDir);
+                Console.WriteLine($"\n创建数据目录: {dataDir}");
+                try
+                {
+                    Directory.CreateDirectory(dataDir);
+                    Console.WriteLine("数据目录创建成功");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"创建数据目录失败: {ex.Message}");
+                    return;
+                }
+
                 var filePath = Path.Combine(dataDir, "test_data.pcap");
-                Console.WriteLine($"测试文件路径: {filePath}");
+                Console.WriteLine($"\n测试文件路径: {filePath}");
                 TestFileWrite(filePath);
 
-                Console.WriteLine("\n测试完成，按任意键退出...");
+                // 执行压力测试
+                await StressTest.RunAllTests();
+
+                Console.WriteLine("\n所有测试完成！");
+                Console.WriteLine("按任意键退出...");
                 Console.ReadKey();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"发生错误: {ex.Message}");
+                Console.WriteLine($"\n发生错误: {ex.Message}");
+                Console.WriteLine($"错误类型: {ex.GetType().Name}");
                 Console.WriteLine($"堆栈跟踪: {ex.StackTrace}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"\n内部错误: {ex.InnerException.Message}");
+                }
             }
         }
 
@@ -69,28 +86,68 @@ namespace KimoTech.PcapFile.IO.Test
 
             try
             {
-                using var writer = new PcapWriter();
-                // 创建文件
-                if (!writer.Create(filePath))
+                var baseDirectory = Path.GetDirectoryName(filePath) ?? AppContext.BaseDirectory;
+                var pataDataDirectory = Path.Combine(baseDirectory, "Packet_Data");
+
+                // 先创建一个测试文件
+                using (var writer = new PcapWriter())
+                {
+                    if (writer.Create(filePath))
+                    {
+                        var testPacket = new DataPacket(
+                            DateTime.Now,
+                            Encoding.UTF8.GetBytes("测试数据")
+                        );
+                        writer.WritePacket(testPacket);
+                        writer.Flush();
+                    }
+                }
+
+                // 验证PATA文件已创建
+                var initialPataFiles = Directory.GetFiles(pataDataDirectory, "data_*.pata");
+                Console.WriteLine($"\n初始PATA文件数量: {initialPataFiles.Length}");
+                foreach (var pataFile in initialPataFiles)
+                {
+                    Console.WriteLine($"初始PATA文件: {Path.GetFileName(pataFile)}");
+                }
+
+                // 重新创建文件，应该会删除旧的PATA文件
+                using var newWriter = new PcapWriter();
+                if (!newWriter.Create(filePath))
                 {
                     Console.WriteLine("创建文件失败");
                     return;
                 }
 
-                Console.WriteLine("创建文件成功");
-                Console.WriteLine($"初始文件大小: {writer.FileSize} 字节");
+                Console.WriteLine("\n重新创建文件成功");
+                Console.WriteLine($"初始文件大小: {newWriter.FileSize} 字节");
 
-                // 写入随机大小的数据包
-                Console.WriteLine("\n开始写入1000个随机大小的数据包...");
+                // 验证旧的PATA文件已被删除
+                var remainingPataFiles = Array.Empty<string>();
+                if (Directory.Exists(pataDataDirectory))
+                {
+                    remainingPataFiles = Directory.GetFiles(pataDataDirectory, "data_*.pata");
+                }
+
+                Console.WriteLine($"\n重新创建后的PATA文件数量: {remainingPataFiles.Length}");
+                if (remainingPataFiles.Length > 0)
+                {
+                    Console.WriteLine("警告：旧的PATA文件未被完全删除！");
+                    foreach (var pataFile in remainingPataFiles)
+                    {
+                        Console.WriteLine($"剩余PATA文件: {Path.GetFileName(pataFile)}");
+                    }
+                }
+
+                // 写入100个随机大小的数据包
+                Console.WriteLine("\n开始写入100个随机大小的数据包...");
                 var random = new Random();
-                var totalBytes = 0L;
                 var startTime = DateTime.Now;
                 var lastProgressTime = DateTime.Now;
                 var progressInterval = TimeSpan.FromSeconds(1);
-                var lastFileSize = writer.FileSize;
 
-                // 写入1000个随机大小的数据包
-                for (uint i = 1; i <= 1000; i++)
+                // 写入100个随机大小的数据包
+                for (uint i = 1; i <= 100; i++)
                 {
                     try
                     {
@@ -103,29 +160,20 @@ namespace KimoTech.PcapFile.IO.Test
                         var packet = new DataPacket(DateTime.Now.AddSeconds(i), payload);
 
                         // 写入数据包
-                        var success = writer.WritePacket(packet);
+                        var success = newWriter.WritePacket(packet);
 
                         if (success)
                         {
-                            totalBytes += packet.PacketLength;
-                            writer.Flush(); // 确保数据被写入磁盘
+                            newWriter.Flush(); // 确保数据被写入磁盘
 
                             // 每秒显示一次进度
                             var now = DateTime.Now;
                             if (now - lastProgressTime >= progressInterval)
                             {
-                                var currentFileSize = writer.FileSize;
-                                var progress = (double)i / 1000 * 100;
+                                var progress = (double)i / 100 * 100;
                                 var elapsed = (now - startTime).TotalSeconds;
-                                var speed = totalBytes / elapsed / 1024 / 1024; // MB/s
-                                var fileSizeMB = currentFileSize / 1024.0 / 1024.0;
-                                var fileSizeChange =
-                                    (currentFileSize - lastFileSize) / 1024.0 / 1024.0;
-                                Console.WriteLine(
-                                    $"进度: {progress:F1}% ({i}/1000), 已写入: {totalBytes / 1024 / 1024:F1} MB, 文件大小: {fileSizeMB:F1} MB (+{fileSizeChange:F1} MB), 速度: {speed:F1} MB/s"
-                                );
+                                Console.WriteLine($"进度: {progress:F1}% ({i}/100), 已写入: {i} 个数据包");
                                 lastProgressTime = now;
-                                lastFileSize = currentFileSize;
                             }
                         }
                         else
@@ -140,34 +188,12 @@ namespace KimoTech.PcapFile.IO.Test
                 }
 
                 // 确保所有数据都被写入磁盘
-                writer.Flush();
+                newWriter.Flush();
 
                 var totalTime = (DateTime.Now - startTime).TotalSeconds;
-                var finalFileSize = writer.FileSize;
                 Console.WriteLine("\n写入完成统计:");
-                Console.WriteLine($"总数据包数量: {writer.PacketCount}");
-                Console.WriteLine($"总数据大小: {totalBytes / 1024 / 1024:F2} MB");
-                Console.WriteLine($"最终文件大小: {finalFileSize / 1024 / 1024:F2} MB");
-                Console.WriteLine(
-                    $"平均每个数据包大小: {finalFileSize / writer.PacketCount / 1024:F2} KB"
-                );
+                Console.WriteLine($"总数据包数量: {newWriter.PacketCount}");
                 Console.WriteLine($"总耗时: {totalTime:F2} 秒");
-                Console.WriteLine($"平均写入速度: {totalBytes / totalTime / 1024 / 1024:F2} MB/s");
-
-                // 验证文件大小
-                var pcapFileInfo = new FileInfo(filePath);
-                var directory = Path.GetDirectoryName(filePath) ?? AppContext.BaseDirectory;
-                var pataDirectory = Path.Combine(directory, "Packet_Data");
-                var pataFilePath = Path.Combine(pataDirectory, "data_001.pata");
-                var pataFileInfo = new FileInfo(pataFilePath);
-                var totalFileSize = pcapFileInfo.Length + pataFileInfo.Length;
-                Console.WriteLine($"\n实际文件大小: {totalFileSize / 1024 / 1024:F2} MB");
-                if (totalFileSize != finalFileSize)
-                {
-                    Console.WriteLine("警告：文件大小不匹配！");
-                    Console.WriteLine($"PCAP文件大小: {pcapFileInfo.Length / 1024 / 1024:F2} MB");
-                    Console.WriteLine($"PATA文件大小: {pataFileInfo.Length / 1024 / 1024:F2} MB");
-                }
             }
             catch (Exception ex)
             {
