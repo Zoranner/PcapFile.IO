@@ -22,14 +22,14 @@ namespace KimoTech.PcapFile.IO
         #region 字段
 
         /// <summary>
-        /// PCAP文件管理器，负责管理PCAP索引文件的创建、打开、写入和关闭操作
+        /// PCAP文件写入器，负责管理PCAP索引文件的创建、打开、写入和关闭操作
         /// </summary>
-        private readonly PcapFileManager _PcapFileManager;
+        private readonly PcapFileWriter _PcapFileWriter;
 
         /// <summary>
-        /// PATA文件管理器，负责管理PATA数据文件的创建、打开、写入和关闭操作
+        /// PATA文件写入器，负责管理PATA数据文件的创建、打开、写入和关闭操作
         /// </summary>
-        private readonly PataFileManager _PataFileManager;
+        private readonly PataFileWriter _PataFileWriter;
 
         /// <summary>
         /// 用于同步写入操作的锁对象
@@ -54,13 +54,13 @@ namespace KimoTech.PcapFile.IO
         /// 初始化PCAP写入器的新实例
         /// </summary>
         /// <remarks>
-        /// 构造函数会创建PCAP和PATA文件管理器的实例。
+        /// 构造函数会创建PCAP和PATA文件写入器的实例。
         /// 这些实例会在对象释放时自动释放。
         /// </remarks>
         public PcapWriter()
         {
-            _PcapFileManager = new PcapFileManager();
-            _PataFileManager = new PataFileManager();
+            _PcapFileWriter = new PcapFileWriter();
+            _PataFileWriter = new PataFileWriter();
         }
 
         #endregion
@@ -81,12 +81,12 @@ namespace KimoTech.PcapFile.IO
             get
             {
                 ThrowIfDisposed();
-                return _PcapFileManager.FileSize + _TotalSize;
+                return _PcapFileWriter.FileSize + _TotalSize;
             }
         }
 
         /// <inheritdoc />
-        public string FilePath => _PcapFileManager.FilePath;
+        public string FilePath => _PcapFileWriter.FilePath;
 
         /// <inheritdoc />
         /// <remarks>
@@ -96,7 +96,7 @@ namespace KimoTech.PcapFile.IO
         public bool AutoFlush { get; set; }
 
         /// <inheritdoc />
-        public bool IsOpen => _PcapFileManager.IsOpen;
+        public bool IsOpen => _PcapFileWriter.IsOpen;
 
         #endregion
 
@@ -130,8 +130,8 @@ namespace KimoTech.PcapFile.IO
                 }
 
                 // 创建文件
-                _PcapFileManager.Create(filePath);
-                _PataFileManager.Create(filePath);
+                _PcapFileWriter.Create(filePath);
+                _PataFileWriter.Create(filePath);
 
                 // 写入文件头
                 if (header.MagicNumber == 0)
@@ -139,7 +139,7 @@ namespace KimoTech.PcapFile.IO
                     header = PcapFileHeader.Create(1, 0);
                 }
 
-                _PcapFileManager.WriteHeader(header);
+                _PcapFileWriter.WriteHeader(header);
 
                 PacketCount = 0;
                 AutoFlush = true;
@@ -177,11 +177,11 @@ namespace KimoTech.PcapFile.IO
             try
             {
                 // 打开文件
-                _PcapFileManager.Open(filePath);
-                _PataFileManager.Open(filePath);
+                _PcapFileWriter.Open(filePath);
+                _PataFileWriter.Open(filePath);
 
                 // 读取文件头
-                var header = _PcapFileManager.ReadHeader();
+                var header = _PcapFileWriter.ReadHeader();
                 PacketCount = header.TotalIndexCount;
                 AutoFlush = true;
 
@@ -205,8 +205,8 @@ namespace KimoTech.PcapFile.IO
         {
             if (!_IsDisposed)
             {
-                _PataFileManager.Close();
-                _PcapFileManager.Close();
+                _PataFileWriter.Close();
+                _PcapFileWriter.Close();
                 PacketCount = 0;
             }
         }
@@ -238,14 +238,14 @@ namespace KimoTech.PcapFile.IO
                 try
                 {
                     // 写入数据包
-                    _PataFileManager.WritePacket(packet);
+                    _PataFileWriter.WritePacket(packet);
 
                     // 更新索引
                     var indexEntry = PataFileIndexEntry.Create(
                         packet.Header.Timestamp,
-                        _PataFileManager.Position - packet.TotalSize
+                        _PataFileWriter.Position - packet.TotalSize
                     );
-                    _PcapFileManager.WriteIndexEntry(indexEntry);
+                    _PcapFileWriter.WriteIndexEntry(indexEntry);
 
                     // 更新大小
                     _TotalSize += packet.TotalSize;
@@ -321,8 +321,8 @@ namespace KimoTech.PcapFile.IO
                 throw new InvalidOperationException("文件未打开");
             }
 
-            _PataFileManager.Flush();
-            _PcapFileManager.Flush();
+            _PataFileWriter.Flush();
+            _PcapFileWriter.Flush();
         }
 
         #endregion
@@ -357,17 +357,17 @@ namespace KimoTech.PcapFile.IO
             try
             {
                 // 写入数据包
-                await _PataFileManager.WritePacketAsync(packet, cancellationToken);
+                await _PataFileWriter.WritePacketAsync(packet, cancellationToken);
 
                 // 更新索引
                 var indexEntry = PataFileIndexEntry.Create(
                     packet.Header.Timestamp,
-                    _PataFileManager.Position - packet.TotalSize
+                    _PataFileWriter.Position - packet.TotalSize
                 );
 
                 lock (_WriteLock)
                 {
-                    _PcapFileManager.WriteIndexEntry(indexEntry);
+                    _PcapFileWriter.WriteIndexEntry(indexEntry);
                     _TotalSize += packet.TotalSize;
                     PacketCount++;
                 }
@@ -441,8 +441,8 @@ namespace KimoTech.PcapFile.IO
                 throw new InvalidOperationException("文件未打开");
             }
 
-            await _PataFileManager.FlushAsync(cancellationToken);
-            await _PcapFileManager.FlushAsync(cancellationToken);
+            await _PataFileWriter.FlushAsync(cancellationToken);
+            await _PcapFileWriter.FlushAsync(cancellationToken);
         }
 
         #endregion
@@ -452,16 +452,16 @@ namespace KimoTech.PcapFile.IO
         /// <inheritdoc />
         /// <remarks>
         /// 释放资源时会：
-        /// 1. 释放PATA文件管理器的资源
-        /// 2. 释放PCAP文件管理器的资源
+        /// 1. 释放PATA文件写入器的资源
+        /// 2. 释放PCAP文件写入器的资源
         /// 3. 标记对象为已释放状态
         /// </remarks>
         public void Dispose()
         {
             if (!_IsDisposed)
             {
-                _PataFileManager.Dispose();
-                _PcapFileManager.Dispose();
+                _PataFileWriter.Dispose();
+                _PcapFileWriter.Dispose();
                 _IsDisposed = true;
             }
         }

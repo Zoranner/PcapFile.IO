@@ -8,9 +8,9 @@ using KimoTech.PcapFile.IO.Utils;
 namespace KimoTech.PcapFile.IO
 {
     /// <summary>
-    /// PCAP文件管理器，负责管理PCAP文件的创建、打开、写入和关闭操作
+    /// PCAP文件写入器，负责管理PCAP文件的创建、打开、写入和关闭操作
     /// </summary>
-    internal class PcapFileManager : IDisposable
+    internal class PcapFileWriter : IDisposable
     {
         #region 字段
 
@@ -51,7 +51,7 @@ namespace KimoTech.PcapFile.IO
         {
             if (_IsDisposed)
             {
-                throw new ObjectDisposedException(nameof(PcapFileManager));
+                throw new ObjectDisposedException(nameof(PcapFileWriter));
             }
 
             if (string.IsNullOrEmpty(filePath))
@@ -87,7 +87,7 @@ namespace KimoTech.PcapFile.IO
         {
             if (_IsDisposed)
             {
-                throw new ObjectDisposedException(nameof(PcapFileManager));
+                throw new ObjectDisposedException(nameof(PcapFileWriter));
             }
 
             if (string.IsNullOrEmpty(filePath))
@@ -127,7 +127,7 @@ namespace KimoTech.PcapFile.IO
         {
             if (_IsDisposed)
             {
-                throw new ObjectDisposedException(nameof(PcapFileManager));
+                throw new ObjectDisposedException(nameof(PcapFileWriter));
             }
 
             if (_BinaryWriter == null)
@@ -146,7 +146,7 @@ namespace KimoTech.PcapFile.IO
         /// <exception cref="InvalidOperationException">文件流未初始化</exception>
         public PcapFileHeader ReadHeader()
         {
-            return _IsDisposed ? throw new ObjectDisposedException(nameof(PcapFileManager))
+            return _IsDisposed ? throw new ObjectDisposedException(nameof(PcapFileWriter))
                 : _FileStream == null ? throw new InvalidOperationException("文件流未初始化")
                 : StreamHelper.ReadStructure<PcapFileHeader>(_FileStream);
         }
@@ -161,7 +161,7 @@ namespace KimoTech.PcapFile.IO
         {
             if (_IsDisposed)
             {
-                throw new ObjectDisposedException(nameof(PcapFileManager));
+                throw new ObjectDisposedException(nameof(PcapFileWriter));
             }
 
             if (_BinaryWriter == null)
@@ -187,7 +187,7 @@ namespace KimoTech.PcapFile.IO
         {
             if (_IsDisposed)
             {
-                throw new ObjectDisposedException(nameof(PcapFileManager));
+                throw new ObjectDisposedException(nameof(PcapFileWriter));
             }
 
             if (indexBytes == null)
@@ -211,7 +211,7 @@ namespace KimoTech.PcapFile.IO
         {
             if (_IsDisposed)
             {
-                throw new ObjectDisposedException(nameof(PcapFileManager));
+                throw new ObjectDisposedException(nameof(PcapFileWriter));
             }
 
             _BinaryWriter?.Flush();
@@ -227,7 +227,7 @@ namespace KimoTech.PcapFile.IO
         {
             if (_IsDisposed)
             {
-                throw new ObjectDisposedException(nameof(PcapFileManager));
+                throw new ObjectDisposedException(nameof(PcapFileWriter));
             }
 
             if (_FileStream != null)

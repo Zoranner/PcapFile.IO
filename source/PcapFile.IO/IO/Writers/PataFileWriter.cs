@@ -10,9 +10,9 @@ using KimoTech.PcapFile.IO.Utils;
 namespace KimoTech.PcapFile.IO
 {
     /// <summary>
-    /// PATA文件管理器，负责管理PATA数据文件的创建、打开、写入和关闭操作
+    /// PATA文件写入器，负责管理PATA数据文件的创建、打开、写入和关闭操作
     /// </summary>
-    internal class PataFileManager : IDisposable
+    internal class PataFileWriter : IDisposable
     {
         #region 字段
 
@@ -57,7 +57,7 @@ namespace KimoTech.PcapFile.IO
         {
             if (_IsDisposed)
             {
-                throw new ObjectDisposedException(nameof(PataFileManager));
+                throw new ObjectDisposedException(nameof(PataFileWriter));
             }
 
             // 删除已存在的PATA文件
@@ -98,7 +98,7 @@ namespace KimoTech.PcapFile.IO
         {
             if (_IsDisposed)
             {
-                throw new ObjectDisposedException(nameof(PataFileManager));
+                throw new ObjectDisposedException(nameof(PataFileWriter));
             }
 
             _CurrentPacketCount = 0;
@@ -132,7 +132,7 @@ namespace KimoTech.PcapFile.IO
         {
             if (_IsDisposed)
             {
-                throw new ObjectDisposedException(nameof(PataFileManager));
+                throw new ObjectDisposedException(nameof(PataFileWriter));
             }
 
             if (_BinaryWriter == null)
@@ -155,7 +155,7 @@ namespace KimoTech.PcapFile.IO
         {
             if (_IsDisposed)
             {
-                throw new ObjectDisposedException(nameof(PataFileManager));
+                throw new ObjectDisposedException(nameof(PataFileWriter));
             }
 
             if (packet == null)
@@ -216,7 +216,7 @@ namespace KimoTech.PcapFile.IO
         {
             if (_IsDisposed)
             {
-                throw new ObjectDisposedException(nameof(PataFileManager));
+                throw new ObjectDisposedException(nameof(PataFileWriter));
             }
 
             if (packet == null)
@@ -251,7 +251,7 @@ namespace KimoTech.PcapFile.IO
         {
             if (_IsDisposed)
             {
-                throw new ObjectDisposedException(nameof(PataFileManager));
+                throw new ObjectDisposedException(nameof(PataFileWriter));
             }
 
             _BinaryWriter?.Flush();
@@ -266,7 +266,7 @@ namespace KimoTech.PcapFile.IO
         {
             if (_IsDisposed)
             {
-                throw new ObjectDisposedException(nameof(PataFileManager));
+                throw new ObjectDisposedException(nameof(PataFileWriter));
             }
 
             if (_FileStream != null)
