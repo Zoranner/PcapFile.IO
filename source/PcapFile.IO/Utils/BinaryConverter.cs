@@ -17,7 +17,7 @@ namespace KimoTech.PcapFile.IO.Utils
         /// <param name="startIndex">起始索引</param>
         /// <param name="littleEndian">是否使用小端序</param>
         /// <returns>转换后的值</returns>
-        public static T ToValue<T>(byte[] bytes, int startIndex = 0, bool littleEndian = true)
+        public static T FromBytes<T>(byte[] bytes, int startIndex = 0, bool littleEndian = true)
             where T : struct
         {
             if (bytes == null || bytes.Length < startIndex + Marshal.SizeOf<T>())

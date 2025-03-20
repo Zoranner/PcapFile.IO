@@ -19,17 +19,17 @@ namespace KimoTech.PcapFile.IO.Structures
         /// <summary>
         /// 数据包捕获时间戳(毫秒)
         /// </summary>
-        public long Timestamp { get; }
+        public long Timestamp { get; set; }
 
         /// <summary>
         /// 数据包长度
         /// </summary>
-        public uint PacketLength { get; }
+        public uint PacketLength { get; set; }
 
         /// <summary>
         /// 数据包校验和
         /// </summary>
-        public uint Checksum { get; }
+        public uint Checksum { get; set; }
 
         private DataPacketHeader(long timestamp, uint packetLength, uint checksum)
         {
@@ -66,6 +66,19 @@ namespace KimoTech.PcapFile.IO.Structures
             var packetLength = (uint)packetData.Length;
             var checksum = ChecksumCalculator.CalculateCrc32(packetData);
             return Create(timestamp, packetLength, checksum);
+        }
+
+        /// <summary>
+        /// 从字节数组创建 DataPacketHeader 实例
+        /// </summary>
+        /// <param name="bytes">字节数组</param>
+        /// <returns>DataPacketHeader 实例</returns>
+        /// <exception cref="ArgumentException">当字节数组无效时抛出</exception>
+        public static DataPacketHeader FromBytes(byte[] bytes)
+        {
+            return bytes == null || bytes.Length < HEADER_SIZE
+                ? throw new ArgumentException("Invalid header data", nameof(bytes))
+                : BinaryConverter.FromBytes<DataPacketHeader>(bytes);
         }
 
         /// <summary>

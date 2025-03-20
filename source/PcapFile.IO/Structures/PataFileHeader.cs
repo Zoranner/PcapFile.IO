@@ -1,3 +1,4 @@
+using System;
 using System.Runtime.InteropServices;
 using KimoTech.PcapFile.IO.Configuration;
 using KimoTech.PcapFile.IO.Utils;
@@ -16,24 +17,24 @@ namespace KimoTech.PcapFile.IO.Structures
         public const int HEADER_SIZE = 16; // 4 + 4 + 4 + 2 + 2 + 4
 
         /// <summary>
-        /// 默认时间戳精度(微秒)
+        /// 默认时间戳精度(毫秒)
         /// </summary>
-        public const uint DEFAULT_TIMESTAMP_ACCURACY = 1000000;
+        public const uint DEFAULT_TIMESTAMP_ACCURACY = 1000;
 
         /// <summary>
         /// 魔术数，固定值 0x50415441 ("PATA")
         /// </summary>
-        public uint MagicNumber { get; }
+        public uint MagicNumber { get; set; }
 
         /// <summary>
         /// 主版本号
         /// </summary>
-        public ushort MajorVersion { get; }
+        public ushort MajorVersion { get; set; }
 
         /// <summary>
         /// 次版本号
         /// </summary>
-        public ushort MinorVersion { get; }
+        public ushort MinorVersion { get; set; }
 
         /// <summary>
         /// 时区偏移量(GMT)
@@ -62,6 +63,19 @@ namespace KimoTech.PcapFile.IO.Structures
         public static PataFileHeader Create(int timezone)
         {
             return new PataFileHeader(timezone);
+        }
+
+        /// <summary>
+        /// 从字节数组创建 PataFileHeader 实例
+        /// </summary>
+        /// <param name="bytes">字节数组</param>
+        /// <returns>PataFileHeader 实例</returns>
+        /// <exception cref="ArgumentException">当字节数组无效时抛出</exception>
+        public static PataFileHeader FromBytes(byte[] bytes)
+        {
+            return bytes == null || bytes.Length < HEADER_SIZE
+                ? throw new ArgumentException("Invalid header data", nameof(bytes))
+                : BinaryConverter.FromBytes<PataFileHeader>(bytes);
         }
 
         /// <summary>
