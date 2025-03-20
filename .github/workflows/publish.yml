@@ -1,0 +1,39 @@
+name: Publish NuGet Package
+
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  PROJECT_PATH: ./source/${{ github.event.repository.name }}/${{ github.event.repository.name }}.csproj
+  CONFIGURATION: Release
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: "8.0.x"
+      - run: >
+          dotnet restore 
+          ${{ env.PROJECT_PATH }}
+      - run: >
+          dotnet build 
+          ${{ env.PROJECT_PATH }}
+          --configuration ${{ env.CONFIGURATION }}
+          --no-restore
+      - run: >
+          dotnet pack 
+          ${{ env.PROJECT_PATH }}
+          --no-build
+          --output ./publish
+      - run: >
+          dotnet nuget push 
+          "./publish/*.nupkg" 
+          --source https://api.nuget.org/v3/index.json 
+          --api-key ${{ secrets.NUGET_API_KEY }} 
+          --skip-duplicate

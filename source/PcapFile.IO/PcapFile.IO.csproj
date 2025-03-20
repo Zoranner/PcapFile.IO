@@ -14,12 +14,15 @@
 		<Version>$(AssemblyVersion)</Version>
 		<FileVersion>$(AssemblyVersion)</FileVersion>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<PackageTags>pcap;file;io;packet;capture</PackageTags>
-		<Description>A .NET library for reading and writing PCAP format files</Description>
+		<PackageTags>pcap;file;io;packet;capture;network;protocol;wireshark;tcpdump;pata</PackageTags>
+		<Description>A high-performance .NET library for reading and writing PCAP format files with custom PATA data storage. Supports packet capture, network protocol analysis, and data storage optimization.</Description>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.IO.Compression" Version="4.3.0" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="\"/>
+    <None Include="..\..\LICENSE" Pack="true" PackagePath="\"/>
   </ItemGroup>
 
 </Project> 
