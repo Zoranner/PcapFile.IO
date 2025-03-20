@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFrameworks>netstandard2.1;net6.0;net8.0;</TargetFrameworks>
+	<PropertyGroup>
+		<TargetFrameworks>netstandard2.1;net6.0;net8.0;</TargetFrameworks>
 		<Nullable>disable</Nullable>
 		<RootNamespace>KimoTech.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
 		<AssemblyName>PcapFile.IO</AssemblyName>
@@ -18,11 +18,11 @@
 		<Description>A high-performance .NET library for reading and writing PCAP format files with custom PATA data storage. Supports packet capture, network protocol analysis, and data storage optimization.</Description>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-  </PropertyGroup>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <None Include="..\..\README.md" Pack="true" PackagePath="\"/>
-    <None Include="..\..\LICENSE" Pack="true" PackagePath="\"/>
-  </ItemGroup>
+	<ItemGroup>
+		<None Include="..\..\README.md" Pack="true" PackagePath="\"/>
+		<None Include="..\..\LICENSE" Pack="true" PackagePath="\"/>
+	</ItemGroup>
 
 </Project> 
