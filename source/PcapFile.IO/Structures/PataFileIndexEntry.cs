@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
+using KimoTech.PcapFile.IO.Utils;
 
-namespace KimoTech.PcapFile.IO
+namespace KimoTech.PcapFile.IO.Structures
 {
     /// <summary>
     /// 文件内索引结构

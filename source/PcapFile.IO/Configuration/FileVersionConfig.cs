@@ -1,5 +1,3 @@
-using System;
-
 namespace KimoTech.PcapFile.IO.Configuration
 {
     /// <summary>
@@ -36,5 +34,10 @@ namespace KimoTech.PcapFile.IO.Configuration
         /// 默认索引间隔(毫秒)
         /// </summary>
         public const ushort DEFAULT_INDEX_INTERVAL = 1000;
+
+        /// <summary>
+        /// 每个PATA文件最大数据包数量
+        /// </summary>
+        public const int MAX_PACKETS_PER_FILE = 20;
     }
 }

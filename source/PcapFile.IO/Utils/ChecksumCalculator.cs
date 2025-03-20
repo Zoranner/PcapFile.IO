@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace KimoTech.PcapFile.IO
+namespace KimoTech.PcapFile.IO.Utils
 {
     /// <summary>
     /// 校验和计算工具

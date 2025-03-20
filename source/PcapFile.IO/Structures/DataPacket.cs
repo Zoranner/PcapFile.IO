@@ -1,6 +1,8 @@
 using System;
+using KimoTech.PcapFile.IO.Extensions;
+using KimoTech.PcapFile.IO.Utils;
 
-namespace KimoTech.PcapFile.IO
+namespace KimoTech.PcapFile.IO.Structures
 {
     /// <summary>
     /// 数据包类

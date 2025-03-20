@@ -1,8 +1,9 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using KimoTech.PcapFile.IO.Structures;
 
-namespace KimoTech.PcapFile.IO
+namespace KimoTech.PcapFile.IO.Interfaces
 {
     /// <summary>
     /// 数据读取接口

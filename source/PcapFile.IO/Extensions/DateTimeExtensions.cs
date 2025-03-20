@@ -1,6 +1,6 @@
 using System;
 
-namespace KimoTech.PcapFile.IO
+namespace KimoTech.PcapFile.IO.Extensions
 {
     /// <summary>
     /// DateTime 扩展方法

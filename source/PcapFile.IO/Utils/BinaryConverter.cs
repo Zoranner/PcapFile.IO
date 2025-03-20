@@ -2,7 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace KimoTech.PcapFile.IO
+namespace KimoTech.PcapFile.IO.Utils
 {
     /// <summary>
     /// 二进制数据转换工具类
