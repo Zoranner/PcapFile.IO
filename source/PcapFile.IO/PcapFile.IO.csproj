@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.1;net6.0;net8.0;</TargetFrameworks>
+		<Nullable>disable</Nullable>
+		<RootNamespace>KimoTech.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
+		<AssemblyName>PcapFile.IO</AssemblyName>
+		<Authors>Zoranner</Authors>
+		<AssemblyVersion>0.0.1</AssemblyVersion>
+		<Platforms>AnyCPU;x64;x86</Platforms>
+		<Copyright>$(Authors)</Copyright>
+		<Company>$(Authors)</Company>
+		<Title>$(AssemblyName)</Title>
+		<Version>$(AssemblyVersion)</Version>
+		<FileVersion>$(AssemblyVersion)</FileVersion>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<PackageTags>pcap;file;io;packet;capture</PackageTags>
+		<Description>A .NET library for reading and writing PCAP format files</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.IO.Compression" Version="4.3.0" />
+  </ItemGroup>
+
+</Project> 
