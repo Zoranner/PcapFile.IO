@@ -26,7 +26,7 @@ alwaysApply: true
 - 类名使用 `PascalCase` 命名法
 - 接口名以 `I` 开头，使用 `PascalCase` 命名法
 - 方法名使用 `PascalCase` 命名法
-- 私有字段使用 `_camelCase` 命名法
+- 私有字段使用 `_PascalCase` 命名法
 - 常量使用 `UPPER_CASE` 命名法
 - 文件名与主类名保持一致
 
