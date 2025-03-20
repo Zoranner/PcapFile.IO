@@ -1,0 +1,115 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: PcapFile.IO 项目开发规范
+globs: ["**/*.cs"]
+alwaysApply: true
+---
+
+# PcapFile.IO 项目开发规范
+
+## 代码规范
+
+### 通用规范
+- 遵循 C# 编码规范
+- 支持多目标框架：.NET Standard 2.1、.NET 6.0、.NET 8.0
+- 文件编码统一使用 UTF-8
+- 缩进使用 4 个空格
+- 行长度限制在 120 个字符以内
+- 使用 `using` 语句进行资源管理
+- 使用条件编译确保跨框架兼容性
+
+### 命名规范
+- 类名使用 `PascalCase` 命名法
+- 接口名以 `I` 开头，使用 `PascalCase` 命名法
+- 方法名使用 `PascalCase` 命名法
+- 私有字段使用 `_camelCase` 命名法
+- 常量使用 `UPPER_CASE` 命名法
+- 文件名与主类名保持一致
+
+### 文档规范
+- 所有公共 API 必须有 XML 文档注释
+- 复杂算法需要添加详细注释
+- README.md 和 PROTOCOL.md 保持更新
+- 代码变更需要同步更新相关文档
+
+## 项目结构规范
+
+### 目录结构
+```
+PcapFile.IO/
+├── source/                    # 源代码目录
+│   ├── PcapFile.IO/          # 核心库项目
+│   │   ├── IO/               # 文件读写相关
+│   │   ├── Interfaces/       # 接口定义
+│   │   ├── Structures/       # 数据结构定义
+│   │   ├── Configuration/    # 配置相关
+│   │   ├── Utils/           # 工具类
+│   │   ├── Extensions/      # 扩展方法
+│   │   ├── Properties/      # 项目属性
+│   │   └── PcapFile.IO.csproj # 项目文件
+│   └── PcapFile.IO.sln       # 解决方案文件
+├── publish/                   # 发布文件
+├── PROTOCOL.md               # 协议规范文档
+└── README.md                 # 项目说明文档
+```
+
+### 模块组织
+- 每个类文件只包含一个主要类
+- 相关功能应该放在同一个命名空间下
+- 避免循环依赖
+- 保持类职责单一
+
+## 性能优化规范
+
+### 代码优化
+- 使用 `Span<T>` 和 `Memory<T>` 进行高效内存操作（.NET Standard 2.1+）
+- 合理使用 `struct` 和 `class`
+- 避免不必要的对象分配
+- 使用 `ValueTask` 进行异步操作（.NET Standard 2.1+）
+- 实现 `IDisposable` 接口正确释放资源
+- 使用条件编译处理不同框架的 API 差异
+
+### 性能分析
+- 使用性能分析工具（如 dotTrace）识别瓶颈
+- 定期进行性能测试和优化
+- 记录关键操作的性能指标
+
+## 依赖管理规范
+
+### NuGet 包管理
+- 使用 .NET CLI 管理包依赖
+- 所有依赖必须在项目文件中声明
+- 开发依赖使用 `PackageReference` 标签
+- 指定依赖的版本范围，避免使用最新版本（*）
+- 确保所有依赖包支持 .NET Standard 2.1
+
+### 常用命令
+```bash
+# 添加包引用
+dotnet add package <package_name>
+
+# 更新包
+dotnet restore
+
+# 构建项目
+dotnet build
+```
+
+## 代码质量检查
+
+### 自动化检查
+```bash
+# 运行代码分析
+dotnet build /p:TreatWarningsAsErrors=true
+```
+
+### 提交前检查
+- 确保代码通过所有自动化检查
+- 确保文档已更新
+- 确保没有引入新的依赖
+- 确保代码在所有目标框架下都能正常工作
+- 确保使用条件编译处理框架差异
