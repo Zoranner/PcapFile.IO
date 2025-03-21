@@ -1,14 +1,13 @@
 using System;
 using System.IO;
 using System.Security.Cryptography;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace KimoTech.PcapFile.IO.Utils
 {
     /// <summary>
-    /// 校验和计算工具
+    /// CRC32校验和计算工具
     /// </summary>
     public static class ChecksumCalculator
     {
@@ -40,142 +39,27 @@ namespace KimoTech.PcapFile.IO.Utils
         }
 
         /// <summary>
-        /// 计算Adler32校验和
+        /// 计算字节数组的CRC32值
         /// </summary>
-        /// <param name="data">待计算数据</param>
-        /// <returns>校验和</returns>
-        public static uint CalculateAdler32(byte[] data)
+        public static uint CalculateCrc32(byte[] data, int offset, int length)
         {
-            if (data == null || data.Length == 0)
+            if (data == null)
             {
-                return 1; // Adler32初始值为1
+                throw new ArgumentNullException(nameof(data));
             }
 
-            const uint modAdler = 65521;
-            uint a = 1,
-                b = 0;
-
-            for (var i = 0; i < data.Length; i++)
+            if (offset < 0 || offset >= data.Length)
             {
-                a = (a + data[i]) % modAdler;
-                b = (b + a) % modAdler;
+                throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
-            return (b << 16) | a;
-        }
-
-        /// <summary>
-        /// 计算MD5哈希值
-        /// </summary>
-        /// <param name="data">待计算数据</param>
-        /// <returns>MD5哈希值(16字节)</returns>
-        public static byte[] CalculateMd5(byte[] data)
-        {
-            if (data == null || data.Length == 0)
+            if (length < 0 || offset + length > data.Length)
             {
-                return new byte[16];
+                throw new ArgumentOutOfRangeException(nameof(length));
             }
 
-            using var md5 = MD5.Create();
-            return md5.ComputeHash(data);
-        }
-
-        /// <summary>
-        /// 计算MD5哈希值并转为32位十六进制字符串
-        /// </summary>
-        /// <param name="data">待计算数据</param>
-        /// <returns>MD5哈希字符串</returns>
-        public static string CalculateMd5String(byte[] data)
-        {
-            var hash = CalculateMd5(data);
-            var sb = new StringBuilder(32);
-
-            for (var i = 0; i < hash.Length; i++)
-            {
-                sb.Append(hash[i].ToString("x2"));
-            }
-
-            return sb.ToString();
-        }
-
-        /// <summary>
-        /// 计算SHA256哈希值
-        /// </summary>
-        /// <param name="data">待计算数据</param>
-        /// <returns>SHA256哈希值(32字节)</returns>
-        public static byte[] CalculateSha256(byte[] data)
-        {
-            if (data == null || data.Length == 0)
-            {
-                return new byte[32];
-            }
-
-            using var sha256 = SHA256.Create();
-            return sha256.ComputeHash(data);
-        }
-
-        /// <summary>
-        /// 计算SHA256哈希值并转为64位十六进制字符串
-        /// </summary>
-        /// <param name="data">待计算数据</param>
-        /// <returns>SHA256哈希字符串</returns>
-        public static string CalculateSha256String(byte[] data)
-        {
-            var hash = CalculateSha256(data);
-            var sb = new StringBuilder(64);
-
-            for (var i = 0; i < hash.Length; i++)
-            {
-                sb.Append(hash[i].ToString("x2"));
-            }
-
-            return sb.ToString();
-        }
-
-        /// <summary>
-        /// 计算简单的校验和(所有字节相加)
-        /// </summary>
-        /// <param name="data">待计算数据</param>
-        /// <returns>校验和</returns>
-        public static uint CalculateSimpleSum(byte[] data)
-        {
-            if (data == null || data.Length == 0)
-            {
-                return 0;
-            }
-
-            uint sum = 0;
-            for (var i = 0; i < data.Length; i++)
-            {
-                sum += data[i];
-            }
-
-            return sum;
-        }
-
-        /// <summary>
-        /// 计算Fletcher32校验和
-        /// </summary>
-        /// <param name="data">待计算数据</param>
-        /// <returns>校验和</returns>
-        public static uint CalculateFletcher32(byte[] data)
-        {
-            if (data == null || data.Length == 0)
-            {
-                return 0;
-            }
-
-            const uint mod = 65535;
-            uint sum1 = 0,
-                sum2 = 0;
-
-            for (var i = 0; i < data.Length; i++)
-            {
-                sum1 = (sum1 + data[i]) % mod;
-                sum2 = (sum2 + sum1) % mod;
-            }
-
-            return (sum2 << 16) | sum1;
+            using var crc32 = new CRC32();
+            return crc32.ComputeHash(data, offset, length);
         }
 
         /// <summary>
@@ -303,6 +187,61 @@ namespace KimoTech.PcapFile.IO.Utils
             {
                 stream.Seek(currentPosition, SeekOrigin.Begin);
             }
+        }
+    }
+
+    /// <summary>
+    /// CRC32算法实现
+    /// </summary>
+    internal class CRC32 : HashAlgorithm
+    {
+        private static readonly uint[] _Table;
+        private uint _Value;
+
+        static CRC32()
+        {
+            _Table = new uint[256];
+            for (uint i = 0; i < 256; i++)
+            {
+                var value = i;
+                for (var j = 0; j < 8; j++)
+                {
+                    value = (value & 1) == 1 ? (value >> 1) ^ 0xEDB88320 : value >> 1;
+                }
+
+                _Table[i] = value;
+            }
+        }
+
+        public CRC32()
+        {
+            HashSizeValue = 32;
+            Initialize();
+        }
+
+        public override void Initialize()
+        {
+            _Value = 0xFFFFFFFF;
+        }
+
+        protected override void HashCore(byte[] array, int ibStart, int cbSize)
+        {
+            for (var i = ibStart; i < ibStart + cbSize; i++)
+            {
+                _Value = (_Value >> 8) ^ _Table[(_Value & 0xFF) ^ array[i]];
+            }
+        }
+
+        protected override byte[] HashFinal()
+        {
+            _Value = ~_Value;
+            return BitConverter.GetBytes(_Value);
+        }
+
+        public new uint ComputeHash(byte[] buffer, int offset, int count)
+        {
+            HashCore(buffer, offset, count);
+            return ~_Value;
         }
     }
 }
