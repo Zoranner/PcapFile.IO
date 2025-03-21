@@ -71,7 +71,7 @@ namespace KimoTech.PcapFile.IO.Utils
             var size = Marshal.SizeOf<T>();
             var buffer = new byte[size];
             stream.Read(buffer, 0, size);
-            return ByteArrayToStructure<T>(buffer);
+            return BinaryConverter.FromBytes<T>(buffer);
         }
 
         /// <summary>
@@ -96,28 +96,8 @@ namespace KimoTech.PcapFile.IO.Utils
 
             var size = Marshal.SizeOf<T>();
             var buffer = new byte[size];
-            await stream.ReadAsync(buffer, 0, size, cancellationToken);
-            return ByteArrayToStructure<T>(buffer);
-        }
-
-        /// <summary>
-        /// 将字节数组转换为结构体
-        /// </summary>
-        /// <typeparam name="T">结构体类型</typeparam>
-        /// <param name="bytes">字节数组</param>
-        /// <returns>结构体实例</returns>
-        private static T ByteArrayToStructure<T>(byte[] bytes)
-            where T : struct
-        {
-            var handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
-            try
-            {
-                return Marshal.PtrToStructure<T>(handle.AddrOfPinnedObject());
-            }
-            finally
-            {
-                handle.Free();
-            }
+            await stream.ReadAsync(buffer.AsMemory(0, size), cancellationToken);
+            return BinaryConverter.FromBytes<T>(buffer);
         }
     }
 }

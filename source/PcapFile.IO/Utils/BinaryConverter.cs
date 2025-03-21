@@ -120,5 +120,39 @@ namespace KimoTech.PcapFile.IO.Utils
         {
             return Convert.FromBase64String(base64);
         }
+
+        /// <summary>
+        /// 将字符串序列化为固定长度的字节数组
+        /// </summary>
+        /// <param name="value">字符串值</param>
+        /// <param name="length">固定长度</param>
+        /// <returns>固定长度的字节数组</returns>
+        public static byte[] ToFixedLengthBytes(string value, int length)
+        {
+            var buffer = new byte[length];
+            if (!string.IsNullOrEmpty(value))
+            {
+                var bytes = Encoding.UTF8.GetBytes(value);
+                Array.Copy(bytes, buffer, Math.Min(bytes.Length, length));
+            }
+
+            return buffer;
+        }
+
+        /// <summary>
+        /// 将固定长度的字节数组反序列化为字符串
+        /// </summary>
+        /// <param name="buffer">固定长度的字节数组</param>
+        /// <returns>字符串</returns>
+        public static string FromFixedLengthBytes(byte[] buffer)
+        {
+            var nullIndex = Array.IndexOf(buffer, (byte)0);
+            if (nullIndex >= 0)
+            {
+                Array.Resize(ref buffer, nullIndex);
+            }
+
+            return Encoding.UTF8.GetString(buffer);
+        }
     }
 }
