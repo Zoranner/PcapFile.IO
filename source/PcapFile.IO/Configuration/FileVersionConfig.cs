@@ -69,5 +69,10 @@ namespace KimoTech.PcapFile.IO.Configuration
         /// 默认文件命名格式
         /// </summary>
         public const string DEFAULT_FILE_NAME_FORMAT = "yyMMdd_HHmmss_fff";
+
+        /// <summary>
+        /// 数据包最大大小(字节)
+        /// </summary>
+        public const int MAX_PACKET_SIZE = 10 * 1024 * 1024; // 10MB
     }
 }

@@ -1,7 +1,6 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using KimoTech.PcapFile.IO.Structures;
 using KimoTech.PcapFile.IO.Utils;
 
@@ -10,6 +9,9 @@ namespace KimoTech.PcapFile.IO
     /// <summary>
     /// PCAP文件写入器，负责管理PCAP文件的创建、打开、写入和关闭操作
     /// </summary>
+    /// <remarks>
+    /// 注意：此类设计为单线程使用，不支持多线程并发写入。
+    /// </remarks>
     internal class PcapFileWriter : IDisposable
     {
         #region 字段
@@ -37,6 +39,23 @@ namespace KimoTech.PcapFile.IO
         /// </summary>
         public bool IsOpen => _FileStream != null && !_IsDisposed;
 
+        /// <summary>
+        /// 获取文件头
+        /// </summary>
+        public PcapFileHeader Header { get; private set; }
+
+        #endregion
+
+        #region 构造函数
+
+        /// <summary>
+        /// 初始化PCAP文件写入器
+        /// </summary>
+        public PcapFileWriter()
+        {
+            // 默认构造函数
+        }
+
         #endregion
 
         #region 公共方法
@@ -49,10 +68,7 @@ namespace KimoTech.PcapFile.IO
         /// <exception cref="IOException">创建文件时发生错误</exception>
         public void Create(string filePath)
         {
-            if (_IsDisposed)
-            {
-                throw new ObjectDisposedException(nameof(PcapFileWriter));
-            }
+            ThrowIfDisposed();
 
             if (string.IsNullOrEmpty(filePath))
             {
@@ -85,10 +101,7 @@ namespace KimoTech.PcapFile.IO
         /// <exception cref="IOException">打开文件时发生错误</exception>
         public void Open(string filePath)
         {
-            if (_IsDisposed)
-            {
-                throw new ObjectDisposedException(nameof(PcapFileWriter));
-            }
+            ThrowIfDisposed();
 
             if (string.IsNullOrEmpty(filePath))
             {
@@ -125,10 +138,7 @@ namespace KimoTech.PcapFile.IO
         /// <exception cref="ObjectDisposedException">对象已释放</exception>
         public void WriteHeader(PcapFileHeader header)
         {
-            if (_IsDisposed)
-            {
-                throw new ObjectDisposedException(nameof(PcapFileWriter));
-            }
+            ThrowIfDisposed();
 
             if (_BinaryWriter == null)
             {
@@ -136,6 +146,7 @@ namespace KimoTech.PcapFile.IO
             }
 
             _BinaryWriter.Write(header.ToBytes());
+            Header = header;
         }
 
         /// <summary>
@@ -146,9 +157,163 @@ namespace KimoTech.PcapFile.IO
         /// <exception cref="InvalidOperationException">文件流未初始化</exception>
         public PcapFileHeader ReadHeader()
         {
-            return _IsDisposed ? throw new ObjectDisposedException(nameof(PcapFileWriter))
-                : _FileStream == null ? throw new InvalidOperationException("文件流未初始化")
-                : StreamHelper.ReadStructure<PcapFileHeader>(_FileStream);
+            ThrowIfDisposed();
+
+            if (_FileStream == null)
+            {
+                throw new InvalidOperationException("文件流未初始化");
+            }
+
+            var originalPosition = _FileStream.Position;
+            _FileStream.Position = 0;
+            Header = StreamHelper.ReadStructure<PcapFileHeader>(_FileStream);
+            _FileStream.Position = originalPosition;
+            return Header;
+        }
+
+        /// <summary>
+        /// 计算和更新校验和
+        /// </summary>
+        /// <param name="fileEntries">文件条目列表</param>
+        /// <param name="timeIndices">时间索引列表</param>
+        /// <param name="fileIndices">文件索引字典</param>
+        /// <returns>更新后的文件头</returns>
+        public PcapFileHeader CalculateAndUpdateChecksum(
+            List<PataFileEntry> fileEntries,
+            List<PataTimeIndexEntry> timeIndices,
+            Dictionary<string, List<PataFileIndexEntry>> fileIndices
+        )
+        {
+            ThrowIfDisposed();
+
+            if (_FileStream == null)
+            {
+                throw new InvalidOperationException("文件流未初始化");
+            }
+
+            // 准备计算校验和
+            using var memoryStream = new MemoryStream();
+
+            // 创建临时头部，校验和字段为0
+            var updatedHeader = Header;
+            updatedHeader.FileCount = (ushort)fileEntries.Count;
+            updatedHeader.TotalIndexCount = 0;
+
+            // 计算数据包总数
+            foreach (var entry in fileEntries)
+            {
+                updatedHeader.TotalIndexCount += entry.IndexCount;
+            }
+
+            // 计算偏移量
+            updatedHeader.FileEntryOffset = PcapFileHeader.HEADER_SIZE;
+            updatedHeader.TimeIndexOffset =
+                updatedHeader.FileEntryOffset + (uint)fileEntries.Count * PataFileEntry.ENTRY_SIZE;
+
+            // 将校验和设置为0进行计算
+            var headerBytes = updatedHeader.ToBytes();
+            Array.Copy(BitConverter.GetBytes(0), 0, headerBytes, 24, 4);
+            memoryStream.Write(headerBytes, 0, headerBytes.Length);
+
+            // 写入文件条目
+            foreach (var entry in fileEntries)
+            {
+                memoryStream.Write(entry.ToBytes(), 0, PataFileEntry.ENTRY_SIZE);
+            }
+
+            // 写入时间索引
+            foreach (var entry in timeIndices)
+            {
+                memoryStream.Write(entry.ToBytes(), 0, PataTimeIndexEntry.ENTRY_SIZE);
+            }
+
+            // 写入文件索引
+            foreach (var entry in fileEntries)
+            {
+                if (fileIndices.TryGetValue(entry.RelativePath, out var indexList))
+                {
+                    foreach (var indexEntry in indexList)
+                    {
+                        memoryStream.Write(indexEntry.ToBytes(), 0, PataFileIndexEntry.ENTRY_SIZE);
+                    }
+                }
+            }
+
+            // 计算CRC32校验和
+            var bytes = memoryStream.ToArray();
+            updatedHeader.Checksum = ChecksumCalculator.CalculateCrc32(bytes);
+
+            // 更新头部
+            Header = updatedHeader;
+
+            return Header;
+        }
+
+        /// <summary>
+        /// 一次性写入所有索引数据
+        /// </summary>
+        /// <param name="fileEntries">文件条目列表</param>
+        /// <param name="timeIndices">时间索引列表</param>
+        /// <param name="fileIndices">文件索引字典</param>
+        public void WriteAllIndices(
+            List<PataFileEntry> fileEntries,
+            List<PataTimeIndexEntry> timeIndices,
+            Dictionary<string, List<PataFileIndexEntry>> fileIndices
+        )
+        {
+            ThrowIfDisposed();
+
+            if (_FileStream == null)
+            {
+                throw new InvalidOperationException("文件流未初始化");
+            }
+
+            try
+            {
+                // 首先计算和更新校验和
+                var updatedHeader = CalculateAndUpdateChecksum(
+                    fileEntries,
+                    timeIndices,
+                    fileIndices
+                );
+
+                // 定位到文件开头
+                Seek(0);
+
+                // 写入更新后的文件头
+                WriteHeader(updatedHeader);
+
+                // 写入文件条目表
+                foreach (var entry in fileEntries)
+                {
+                    WriteFileEntry(entry);
+                }
+
+                // 写入时间范围索引表
+                foreach (var entry in timeIndices)
+                {
+                    WriteTimeIndexEntry(entry);
+                }
+
+                // 写入文件索引表
+                foreach (var entry in fileEntries)
+                {
+                    if (fileIndices.TryGetValue(entry.RelativePath, out var indexList))
+                    {
+                        foreach (var indexEntry in indexList)
+                        {
+                            WriteFileIndexEntry(indexEntry);
+                        }
+                    }
+                }
+
+                // 确保所有数据都写入磁盘
+                Flush();
+            }
+            catch (Exception ex)
+            {
+                throw new IOException($"写入索引数据失败: {ex.Message}", ex);
+            }
         }
 
         /// <summary>
@@ -159,10 +324,7 @@ namespace KimoTech.PcapFile.IO
         /// <exception cref="ObjectDisposedException">对象已释放</exception>
         public void WriteIndexEntry(PataFileIndexEntry entry)
         {
-            if (_IsDisposed)
-            {
-                throw new ObjectDisposedException(nameof(PcapFileWriter));
-            }
+            ThrowIfDisposed();
 
             if (_BinaryWriter == null)
             {
@@ -173,67 +335,13 @@ namespace KimoTech.PcapFile.IO
         }
 
         /// <summary>
-        /// 异步写入索引条目
-        /// </summary>
-        /// <param name="indexBytes">索引字节数组</param>
-        /// <param name="cancellationToken">取消令牌</param>
-        /// <returns>表示异步操作的任务</returns>
-        /// <exception cref="ArgumentNullException">indexBytes为null</exception>
-        /// <exception cref="ObjectDisposedException">对象已释放</exception>
-        public async Task WriteIndexEntryAsync(
-            byte[] indexBytes,
-            CancellationToken cancellationToken
-        )
-        {
-            if (_IsDisposed)
-            {
-                throw new ObjectDisposedException(nameof(PcapFileWriter));
-            }
-
-            if (indexBytes == null)
-            {
-                throw new ArgumentNullException(nameof(indexBytes));
-            }
-
-            if (_FileStream == null)
-            {
-                throw new InvalidOperationException("文件流未初始化");
-            }
-
-            await _FileStream.WriteAsync(indexBytes, 0, indexBytes.Length, cancellationToken);
-        }
-
-        /// <summary>
         /// 刷新文件缓冲区
         /// </summary>
         /// <exception cref="ObjectDisposedException">对象已释放</exception>
         public void Flush()
         {
-            if (_IsDisposed)
-            {
-                throw new ObjectDisposedException(nameof(PcapFileWriter));
-            }
-
+            ThrowIfDisposed();
             _BinaryWriter?.Flush();
-        }
-
-        /// <summary>
-        /// 异步刷新文件缓冲区
-        /// </summary>
-        /// <param name="cancellationToken">取消令牌</param>
-        /// <returns>表示异步操作的任务</returns>
-        /// <exception cref="ObjectDisposedException">对象已释放</exception>
-        public async Task FlushAsync(CancellationToken cancellationToken)
-        {
-            if (_IsDisposed)
-            {
-                throw new ObjectDisposedException(nameof(PcapFileWriter));
-            }
-
-            if (_FileStream != null)
-            {
-                await _FileStream.FlushAsync(cancellationToken);
-            }
         }
 
         /// <summary>
@@ -256,9 +364,88 @@ namespace KimoTech.PcapFile.IO
             }
         }
 
+        /// <summary>
+        /// 写入文件条目
+        /// </summary>
+        /// <param name="entry">文件条目</param>
+        /// <exception cref="ObjectDisposedException">对象已释放</exception>
+        public void WriteFileEntry(PataFileEntry entry)
+        {
+            ThrowIfDisposed();
+
+            if (_BinaryWriter == null)
+            {
+                throw new InvalidOperationException("文件流未初始化");
+            }
+
+            _BinaryWriter.Write(entry.ToBytes());
+        }
+
+        /// <summary>
+        /// 写入时间索引条目
+        /// </summary>
+        /// <param name="entry">时间索引条目</param>
+        /// <exception cref="ObjectDisposedException">对象已释放</exception>
+        public void WriteTimeIndexEntry(PataTimeIndexEntry entry)
+        {
+            ThrowIfDisposed();
+
+            if (_BinaryWriter == null)
+            {
+                throw new InvalidOperationException("文件流未初始化");
+            }
+
+            _BinaryWriter.Write(entry.ToBytes());
+        }
+
+        /// <summary>
+        /// 写入文件索引条目
+        /// </summary>
+        /// <param name="entry">文件索引条目</param>
+        /// <exception cref="ObjectDisposedException">对象已释放</exception>
+        public void WriteFileIndexEntry(PataFileIndexEntry entry)
+        {
+            ThrowIfDisposed();
+
+            if (_BinaryWriter == null)
+            {
+                throw new InvalidOperationException("文件流未初始化");
+            }
+
+            _BinaryWriter.Write(entry.ToBytes());
+        }
+
+        /// <summary>
+        /// 设置文件位置
+        /// </summary>
+        /// <param name="position">目标位置</param>
+        /// <exception cref="ObjectDisposedException">对象已释放</exception>
+        public void Seek(long position)
+        {
+            ThrowIfDisposed();
+
+            if (_FileStream == null)
+            {
+                throw new InvalidOperationException("文件流未初始化");
+            }
+
+            _FileStream.Position = position;
+        }
+
         #endregion
 
         #region 私有方法
+
+        /// <summary>
+        /// 检查对象是否已释放，如果已释放则抛出异常
+        /// </summary>
+        private void ThrowIfDisposed()
+        {
+            if (_IsDisposed)
+            {
+                throw new ObjectDisposedException(nameof(PcapFileWriter));
+            }
+        }
 
         /// <summary>
         /// 释放文件流和二进制写入器资源

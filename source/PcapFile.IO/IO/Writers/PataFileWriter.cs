@@ -1,9 +1,6 @@
 using System;
 using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using KimoTech.PcapFile.IO.Configuration;
-using KimoTech.PcapFile.IO.Extensions;
 using KimoTech.PcapFile.IO.Structures;
 using KimoTech.PcapFile.IO.Utils;
 
@@ -12,15 +9,20 @@ namespace KimoTech.PcapFile.IO
     /// <summary>
     /// PATA文件写入器，负责管理PATA数据文件的创建、打开、写入和关闭操作
     /// </summary>
+    /// <remarks>
+    /// 注意：此类设计为单线程使用，不支持多线程并发写入。
+    /// </remarks>
     internal class PataFileWriter : IDisposable
     {
         #region 字段
 
         private FileStream _FileStream;
         private BinaryWriter _BinaryWriter;
-        private int _CurrentPacketCount;
         private bool _IsDisposed;
-
+        private readonly string _FileNameFormat;
+        private readonly byte[] _WriteBuffer;
+        private int _WriteBufferPosition;
+        private string _PcapFilePath; // PCAP文件路径
         #endregion
 
         #region 属性
@@ -45,70 +47,112 @@ namespace KimoTech.PcapFile.IO
         /// </summary>
         public bool IsOpen => _FileStream != null && !_IsDisposed;
 
+        /// <summary>
+        /// 获取当前文件中的数据包数量
+        /// </summary>
+        public int CurrentPacketCount { get; private set; }
+
+        /// <summary>
+        /// 获取最大数据包数量
+        /// </summary>
+        public int MaxPacketsPerFile { get; }
+
+        #endregion
+
+        #region 构造函数
+
+        public PataFileWriter(
+            int maxPacketsPerFile = FileVersionConfig.DEFAULT_MAX_PACKETS_PER_FILE,
+            string fileNameFormat = FileVersionConfig.DEFAULT_FILE_NAME_FORMAT,
+            int bufferSize = FileVersionConfig.MAX_BUFFER_SIZE
+        )
+        {
+            MaxPacketsPerFile = maxPacketsPerFile;
+            _FileNameFormat = fileNameFormat;
+            _WriteBuffer = new byte[bufferSize];
+        }
+
         #endregion
 
         #region 公共方法
 
         /// <summary>
-        /// 创建新的PATA文件，使用临时文件作为初始存储
+        /// 初始化PATA文件写入器，仅保存PCAP文件路径，但不创建任何PATA文件
         /// </summary>
-        /// <param name="pcapFilePath">PCAP文件路径</param>
+        public void Initialize(string pcapFilePath)
+        {
+            ThrowIfDisposed();
+
+            // 保存PCAP文件路径
+            _PcapFilePath = pcapFilePath;
+
+            // 重置状态
+            CurrentPacketCount = 0;
+            TotalSize = 0;
+        }
+
+        /// <summary>
+        /// 创建新的PATA文件
+        /// </summary>
         public void Create(string pcapFilePath)
         {
-            if (_IsDisposed)
+            ThrowIfDisposed();
+            Initialize(pcapFilePath);
+        }
+
+        /// <summary>
+        /// 创建特定时间戳的PATA文件
+        /// </summary>
+        /// <param name="timestamp">用于命名的时间戳</param>
+        /// <returns>创建的文件路径</returns>
+        public string CreateDataFile(DateTime timestamp)
+        {
+            ThrowIfDisposed();
+
+            if (string.IsNullOrEmpty(_PcapFilePath))
             {
-                throw new ObjectDisposedException(nameof(PataFileWriter));
+                throw new InvalidOperationException("PCAP文件路径未初始化");
             }
 
-            // 删除已存在的PATA文件
-            var pataDirectory = PathHelper.GetPataDirectoryPath(pcapFilePath);
-            if (Directory.Exists(pataDirectory))
-            {
-                try
-                {
-                    Directory.Delete(pataDirectory, true);
-                }
-                catch (Exception ex)
-                {
-                    throw new IOException($"删除已存在的PATA文件失败: {ex.Message}", ex);
-                }
-            }
+            // 关闭现有文件
+            DisposeStreams();
 
-            _CurrentPacketCount = 0;
-            TotalSize = 0;
-            FilePath = pcapFilePath;
-
-            var tempPath = Path.GetTempFileName();
+            // 创建新文件
+            var newPath = PathHelper.GetPataFilePath(_PcapFilePath, timestamp);
             _FileStream = StreamHelper.CreateFileStream(
-                tempPath,
+                newPath,
                 FileMode.Create,
                 FileAccess.ReadWrite,
                 FileShare.None
             );
             _BinaryWriter = StreamHelper.CreateBinaryWriter(_FileStream);
+            FilePath = newPath;
 
+            // 重置计数器
+            CurrentPacketCount = 0;
+
+            // 写入文件头
             WriteHeader(PataFileHeader.Create(0));
+
+            return newPath;
         }
 
         /// <summary>
         /// 打开现有的PATA文件
         /// </summary>
-        /// <param name="pcapFilePath">PCAP文件路径</param>
         public void Open(string pcapFilePath)
         {
-            if (_IsDisposed)
-            {
-                throw new ObjectDisposedException(nameof(PataFileWriter));
-            }
+            ThrowIfDisposed();
 
-            _CurrentPacketCount = 0;
-            var pataDirectory = PathHelper.GetPataDirectoryPath(pcapFilePath);
-            var files = Directory.GetFiles(pataDirectory, "data_*.pata");
+            // 保存PCAP文件路径
+            _PcapFilePath = pcapFilePath;
 
-            if (files.Length > 0)
+            CurrentPacketCount = 0;
+            var latestPataFile = PathHelper.GetLatestPataFile(pcapFilePath);
+
+            if (latestPataFile != null)
             {
-                Array.Sort(files);
-                FilePath = files[^1];
+                FilePath = latestPataFile;
                 _FileStream = StreamHelper.CreateFileStream(
                     FilePath,
                     FileMode.Open,
@@ -118,7 +162,7 @@ namespace KimoTech.PcapFile.IO
                 _BinaryWriter = StreamHelper.CreateBinaryWriter(_FileStream);
 
                 StreamHelper.ReadStructure<PataFileHeader>(_FileStream);
-                _CurrentPacketCount = (int)(
+                CurrentPacketCount = (int)(
                     (_FileStream.Length - PataFileHeader.HEADER_SIZE) / DataPacketHeader.HEADER_SIZE
                 );
             }
@@ -127,74 +171,53 @@ namespace KimoTech.PcapFile.IO
         /// <summary>
         /// 写入PATA文件头
         /// </summary>
-        /// <param name="header">文件头信息</param>
         public void WriteHeader(PataFileHeader header)
         {
-            if (_IsDisposed)
-            {
-                throw new ObjectDisposedException(nameof(PataFileWriter));
-            }
+            ThrowIfDisposed();
 
             if (_BinaryWriter == null)
             {
                 throw new InvalidOperationException("文件流未初始化");
             }
 
-            _BinaryWriter.Write(header.ToBytes());
+            var headerBytes = header.ToBytes();
+            WriteToBuffer(headerBytes);
+            FlushBuffer();
         }
 
         /// <summary>
         /// 写入数据包到PATA文件
         /// </summary>
-        /// <param name="packet">要写入的数据包</param>
-        /// <remarks>
-        /// 当数据包数量达到最大限制时，会自动创建新文件
-        /// 第一个数据包写入时会重命名临时文件为正式文件
-        /// </remarks>
-        public void WritePacket(DataPacket packet)
+        /// <returns>数据包在文件中的偏移量</returns>
+        public long WritePacket(DataPacket packet)
         {
-            if (_IsDisposed)
-            {
-                throw new ObjectDisposedException(nameof(PataFileWriter));
-            }
+            ThrowIfDisposed();
 
             if (packet == null)
             {
                 throw new ArgumentNullException(nameof(packet));
             }
 
+            if (_FileStream == null)
+            {
+                throw new InvalidOperationException("文件未打开");
+            }
+
             try
             {
-                if (_CurrentPacketCount >= FileVersionConfig.MAX_PACKETS_PER_FILE)
-                {
-                    CreateNewFile(
-                        Path.GetDirectoryName(FilePath),
-                        packet.Header.Timestamp.FromUnixTimeMilliseconds()
-                    );
-                    _CurrentPacketCount = 0;
-                }
-                else if (_CurrentPacketCount == 0)
-                {
-                    var newPath = GetPataFilePath(
-                        FilePath,
-                        packet.Header.Timestamp.FromUnixTimeMilliseconds()
-                    );
-                    _FileStream.Close();
-                    File.Move(_FileStream.Name, newPath);
-                    _FileStream = StreamHelper.CreateFileStream(
-                        newPath,
-                        FileMode.Open,
-                        FileAccess.ReadWrite,
-                        FileShare.None
-                    );
-                    _BinaryWriter = StreamHelper.CreateBinaryWriter(_FileStream);
-                    FilePath = newPath;
-                }
+                // 获取当前位置作为偏移量
+                var offset = Position;
 
-                _BinaryWriter.Write(packet.Header.ToBytes());
-                _BinaryWriter.Write(packet.Data);
-                _CurrentPacketCount++;
+                // 写入数据包
+                var headerBytes = packet.Header.ToBytes();
+                WriteToBuffer(headerBytes);
+                WriteToBuffer(packet.Data);
+
+                // 更新计数和大小
+                CurrentPacketCount++;
                 TotalSize += packet.TotalSize;
+
+                return offset;
             }
             catch (Exception ex)
             {
@@ -203,84 +226,58 @@ namespace KimoTech.PcapFile.IO
         }
 
         /// <summary>
-        /// 异步写入数据包到PATA文件
+        /// 写入数据到缓冲区
         /// </summary>
-        /// <param name="packet">要写入的数据包</param>
-        /// <param name="cancellationToken">取消令牌</param>
-        /// <returns>表示异步操作的任务</returns>
-        /// <remarks>
-        /// 当数据包数量达到最大限制时，会自动创建新文件
-        /// 第一个数据包写入时会重命名临时文件为正式文件
-        /// </remarks>
-        public async Task WritePacketAsync(DataPacket packet, CancellationToken cancellationToken)
+        private void WriteToBuffer(byte[] data)
         {
-            if (_IsDisposed)
+            // 如果数据大小超过缓冲区大小，直接写入而不使用缓冲区
+            if (data.Length > _WriteBuffer.Length)
             {
-                throw new ObjectDisposedException(nameof(PataFileWriter));
+                // 先刷新现有缓冲区内容
+                FlushBuffer();
+
+                // 大数据直接分块写入，避免一次性加载到内存
+                const int chunkSize = 4 * 1024 * 1024; // 4MB 块大小
+                if (data.Length > chunkSize)
+                {
+                    var offset = 0;
+                    while (offset < data.Length)
+                    {
+                        var size = Math.Min(chunkSize, data.Length - offset);
+                        _BinaryWriter.Write(data, offset, size);
+                        offset += size;
+                    }
+
+                    return;
+                }
+                else
+                {
+                    // 数据适中，直接写入
+                    _BinaryWriter.Write(data);
+                    return;
+                }
             }
 
-            if (packet == null)
+            // 如果当前缓冲区剩余空间不足，先刷新
+            if (_WriteBufferPosition + data.Length > _WriteBuffer.Length)
             {
-                throw new ArgumentNullException(nameof(packet));
+                FlushBuffer();
             }
 
-            if (_CurrentPacketCount >= FileVersionConfig.MAX_PACKETS_PER_FILE)
-            {
-                CreateNewFile(
-                    Path.GetDirectoryName(FilePath),
-                    packet.Header.Timestamp.FromUnixTimeMilliseconds()
-                );
-                _CurrentPacketCount = 0;
-            }
-            else if (_CurrentPacketCount == 0 || _BinaryWriter == null)
-            {
-                CreateNewFile(FilePath, packet.Header.Timestamp.FromUnixTimeMilliseconds());
-            }
-
-            var headerBytes = packet.Header.ToBytes();
-            await _FileStream.WriteAsync(new ReadOnlyMemory<byte>(headerBytes), cancellationToken);
-            await _FileStream.WriteAsync(new ReadOnlyMemory<byte>(packet.Data), cancellationToken);
-            _CurrentPacketCount++;
-            TotalSize += packet.TotalSize;
+            Array.Copy(data, 0, _WriteBuffer, _WriteBufferPosition, data.Length);
+            _WriteBufferPosition += data.Length;
         }
 
         /// <summary>
-        /// 刷新文件缓冲区
+        /// 刷新缓冲区
         /// </summary>
-        public void Flush()
+        private void FlushBuffer()
         {
-            if (_IsDisposed)
+            if (_WriteBufferPosition > 0)
             {
-                throw new ObjectDisposedException(nameof(PataFileWriter));
+                _BinaryWriter.Write(_WriteBuffer, 0, _WriteBufferPosition);
+                _WriteBufferPosition = 0;
             }
-
-            _BinaryWriter?.Flush();
-        }
-
-        /// <summary>
-        /// 异步刷新文件缓冲区
-        /// </summary>
-        /// <param name="cancellationToken">取消令牌</param>
-        /// <returns>表示异步操作的任务</returns>
-        public async Task FlushAsync(CancellationToken cancellationToken)
-        {
-            if (_IsDisposed)
-            {
-                throw new ObjectDisposedException(nameof(PataFileWriter));
-            }
-
-            if (_FileStream != null)
-            {
-                await _FileStream.FlushAsync(cancellationToken);
-            }
-        }
-
-        /// <summary>
-        /// 关闭文件管理器
-        /// </summary>
-        public void Close()
-        {
-            DisposeStreams();
         }
 
         /// <summary>
@@ -288,62 +285,73 @@ namespace KimoTech.PcapFile.IO
         /// </summary>
         public void Dispose()
         {
-            if (!_IsDisposed)
+            if (_IsDisposed)
             {
+                return;
+            }
+
+            try
+            {
+                FlushBuffer();
                 DisposeStreams();
+            }
+            finally
+            {
                 _IsDisposed = true;
             }
         }
 
-        #endregion
-
-        #region 私有方法
-
         /// <summary>
-        /// 根据PCAP文件路径和时间戳生成PATA文件路径
+        /// 关闭当前数据文件
         /// </summary>
-        /// <param name="pcapFilePath">PCAP文件路径</param>
-        /// <param name="timestamp">时间戳</param>
-        /// <returns>PATA文件路径</returns>
-        private static string GetPataFilePath(string pcapFilePath, DateTime timestamp)
+        public void Close()
         {
-            return PathHelper.GetPataFilePath(pcapFilePath, timestamp);
+            if (_IsDisposed)
+            {
+                return;
+            }
+
+            try
+            {
+                FlushBuffer();
+                DisposeStreams();
+            }
+            catch (Exception ex)
+            {
+                throw new IOException($"关闭数据文件失败: {ex.Message}", ex);
+            }
         }
 
         /// <summary>
-        /// 创建新的PATA文件
+        /// 刷新缓冲区
         /// </summary>
-        /// <param name="pcapFilePath">PCAP文件路径</param>
-        /// <param name="timestamp">时间戳</param>
-        private void CreateNewFile(string pcapFilePath, DateTime timestamp)
+        public void Flush()
         {
-            if (string.IsNullOrEmpty(pcapFilePath))
+            ThrowIfDisposed();
+
+            if (_FileStream == null)
             {
-                throw new ArgumentException("PCAP文件路径不能为空", nameof(pcapFilePath));
+                throw new InvalidOperationException("文件未打开");
             }
 
-            FilePath = PathHelper.GetPataFilePath(pcapFilePath, timestamp);
-            DisposeStreams();
-
-            var directory = Path.GetDirectoryName(FilePath);
-            if (!string.IsNullOrEmpty(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-
-            _FileStream = StreamHelper.CreateFileStream(
-                FilePath,
-                FileMode.Create,
-                FileAccess.ReadWrite,
-                FileShare.None
-            );
-            _BinaryWriter = StreamHelper.CreateBinaryWriter(_FileStream);
-
-            WriteHeader(PataFileHeader.Create(0));
+            FlushBuffer();
+            _BinaryWriter?.Flush();
+            _FileStream?.Flush();
         }
 
         /// <summary>
-        /// 释放文件流和二进制写入器资源
+        /// 检查对象是否已释放，如果已释放则抛出异常
+        /// </summary>
+        private void ThrowIfDisposed()
+        {
+            if (_IsDisposed)
+            {
+                throw new ObjectDisposedException(nameof(PataFileWriter));
+            }
+        }
+
+        /// <summary>
+        /// 释放流资源
         /// </summary>
         private void DisposeStreams()
         {

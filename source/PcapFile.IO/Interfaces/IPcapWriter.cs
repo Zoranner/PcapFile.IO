@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using KimoTech.PcapFile.IO.Structures;
 
 namespace KimoTech.PcapFile.IO.Interfaces
@@ -40,7 +38,7 @@ namespace KimoTech.PcapFile.IO.Interfaces
 
         #endregion
 
-        #region 同步方法
+        #region 方法
 
         /// <summary>
         /// 创建新的数据文件
@@ -81,37 +79,12 @@ namespace KimoTech.PcapFile.IO.Interfaces
         /// </summary>
         void Flush();
 
-        #endregion
-
-        #region 异步方法
-
         /// <summary>
-        /// 异步写入数据包
+        /// 将当前位置设置到指定偏移量
         /// </summary>
-        /// <param name="packet">数据包</param>
-        /// <param name="cancellationToken">取消令牌</param>
-        /// <returns>是否成功写入</returns>
-        Task<bool> WritePacketAsync(
-            DataPacket packet,
-            CancellationToken cancellationToken = default
-        );
-
-        /// <summary>
-        /// 异步批量写入数据包
-        /// </summary>
-        /// <param name="packets">数据包列表</param>
-        /// <param name="cancellationToken">取消令牌</param>
-        /// <returns>是否成功写入</returns>
-        Task<bool> WritePacketsAsync(
-            IEnumerable<DataPacket> packets,
-            CancellationToken cancellationToken = default
-        );
-
-        /// <summary>
-        /// 异步刷新缓冲区
-        /// </summary>
-        /// <param name="cancellationToken">取消令牌</param>
-        Task FlushAsync(CancellationToken cancellationToken = default);
+        /// <param name="offset">偏移量</param>
+        /// <returns>是否成功设置</returns>
+        bool Seek(long offset);
 
         #endregion
     }
