@@ -5,7 +5,7 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PcapFile.IO", "PcapFile.IO\PcapFile.IO.csproj", "{7FF0817A-2475-4E51-B3E6-0BC86EB8CF8A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PcapFile.IO.Test", "PcapFile.IO.Test\PcapFile.IO.Test.csproj", "{BE890927-7F70-47D5-BB2F-4A75685C038B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PcapFile.IO.Example", "PcapFile.IO.Example\PcapFile.IO.Example.csproj", "{ACE8404F-29EE-4C1D-8BDC-F6569760AB55}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +17,10 @@ Global
 		{7FF0817A-2475-4E51-B3E6-0BC86EB8CF8A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7FF0817A-2475-4E51-B3E6-0BC86EB8CF8A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7FF0817A-2475-4E51-B3E6-0BC86EB8CF8A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{BE890927-7F70-47D5-BB2F-4A75685C038B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BE890927-7F70-47D5-BB2F-4A75685C038B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BE890927-7F70-47D5-BB2F-4A75685C038B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BE890927-7F70-47D5-BB2F-4A75685C038B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ACE8404F-29EE-4C1D-8BDC-F6569760AB55}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ACE8404F-29EE-4C1D-8BDC-F6569760AB55}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ACE8404F-29EE-4C1D-8BDC-F6569760AB55}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ACE8404F-29EE-4C1D-8BDC-F6569760AB55}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
