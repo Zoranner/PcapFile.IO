@@ -9,12 +9,12 @@ using KimoTech.PcapFile.IO.Utils;
 namespace KimoTech.PcapFile.IO
 {
     /// <summary>
-    /// PCAP文件读取器，负责管理PCAP文件的打开、读取和关闭操作
+    /// PROJ文件读取器，负责管理PROJ文件的打开、读取和关闭操作
     /// </summary>
     /// <remarks>
-    /// 该类封装了PCAP工程文件的底层操作，提供读取文件头、文件条目表和索引表的功能。
+    /// 该类封装了PROJ工程文件的底层操作，提供读取文件头、文件条目表和索引表的功能。
     /// </remarks>
-    internal class PcapFileReader : IDisposable
+    internal class ProjFileReader : IDisposable
     {
         #region 字段
 
@@ -27,7 +27,7 @@ namespace KimoTech.PcapFile.IO
         #region 属性
 
         /// <summary>
-        /// 获取当前PCAP文件路径
+        /// 获取当前PROJ文件路径
         /// </summary>
         public string FilePath { get; private set; }
 
@@ -49,16 +49,16 @@ namespace KimoTech.PcapFile.IO
         /// <summary>
         /// 获取文件头
         /// </summary>
-        public PcapFileHeader Header { get; private set; }
+        public ProjFileHeader Header { get; private set; }
 
         #endregion
 
         #region 构造函数
 
         /// <summary>
-        /// 初始化PCAP文件读取器
+        /// 初始化PROJ文件读取器
         /// </summary>
-        public PcapFileReader()
+        public ProjFileReader()
         {
             // 默认构造函数
         }
@@ -68,7 +68,7 @@ namespace KimoTech.PcapFile.IO
         #region 公共方法
 
         /// <summary>
-        /// 打开PCAP文件
+        /// 打开PROJ文件
         /// </summary>
         /// <param name="filePath">文件路径</param>
         /// <exception cref="ArgumentException">文件路径为空或无效</exception>
@@ -85,7 +85,7 @@ namespace KimoTech.PcapFile.IO
 
             if (!File.Exists(filePath))
             {
-                throw new FileNotFoundException("PCAP文件不存在", filePath);
+                throw new FileNotFoundException("PROJ文件不存在", filePath);
             }
 
             try
@@ -105,17 +105,17 @@ namespace KimoTech.PcapFile.IO
             catch (Exception ex)
             {
                 DisposeStreams();
-                throw new IOException($"打开PCAP文件失败: {ex.Message}", ex);
+                throw new IOException($"打开PROJ文件失败: {ex.Message}", ex);
             }
         }
 
         /// <summary>
-        /// 读取PCAP文件头
+        /// 读取PROJ文件头
         /// </summary>
         /// <returns>文件头</returns>
         /// <exception cref="InvalidOperationException">文件未打开</exception>
         /// <exception cref="FormatException">文件格式无效</exception>
-        public PcapFileHeader ReadHeader()
+        public ProjFileHeader ReadHeader()
         {
             ThrowIfDisposed();
 
@@ -133,12 +133,12 @@ namespace KimoTech.PcapFile.IO
                 _FileStream.Position = 0;
 
                 // 读取文件头
-                Header = StreamHelper.ReadStructure<PcapFileHeader>(_FileStream);
+                Header = StreamHelper.ReadStructure<ProjFileHeader>(_FileStream);
 
                 // 验证魔术数
-                if (Header.MagicNumber != Configuration.FileVersionConfig.PCAP_MAGIC_NUMBER)
+                if (Header.MagicNumber != Configuration.FileVersionConfig.PROJ_MAGIC_NUMBER)
                 {
-                    throw new FormatException("无效的PCAP文件格式，魔术数不匹配");
+                    throw new FormatException("无效的PROJ文件格式，魔术数不匹配");
                 }
 
                 // 恢复原始位置
@@ -148,7 +148,7 @@ namespace KimoTech.PcapFile.IO
             }
             catch (EndOfStreamException)
             {
-                throw new FormatException("无效的PCAP文件格式，文件过小");
+                throw new FormatException("无效的PROJ文件格式，文件过小");
             }
             catch (IOException ex)
             {
@@ -294,7 +294,10 @@ namespace KimoTech.PcapFile.IO
                 var indices = new List<PataFileIndexEntry>(initialCapacity);
 
                 // 使用安全的读取方式
-                long remainingBytes = Math.Min(indexCount * PataFileIndexEntry.ENTRY_SIZE, FileSize - fileIndexOffset);
+                long remainingBytes = Math.Min(
+                    indexCount * PataFileIndexEntry.ENTRY_SIZE,
+                    FileSize - fileIndexOffset
+                );
                 long bytesRead = 0;
                 int count = 0;
 
@@ -389,13 +392,13 @@ namespace KimoTech.PcapFile.IO
         }
 
         /// <summary>
-        /// 检查对象是否已释放，如果已释放则抛出异常
+        /// 检查是否已释放
         /// </summary>
         private void ThrowIfDisposed()
         {
             if (_IsDisposed)
             {
-                throw new ObjectDisposedException(nameof(PcapFileReader));
+                throw new ObjectDisposedException(nameof(ProjFileReader));
             }
         }
 

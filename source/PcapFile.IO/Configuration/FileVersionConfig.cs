@@ -11,9 +11,9 @@ namespace KimoTech.PcapFile.IO.Configuration
         public const uint PATA_MAGIC_NUMBER = 0x50415441;
 
         /// <summary>
-        /// PCAP文件标识 ("PCAP")
+        /// PROJ文件标识 ("PROJ")
         /// </summary>
-        public const uint PCAP_MAGIC_NUMBER = 0xA1B2C3D4;
+        public const uint PROJ_MAGIC_NUMBER = 0xA1B2C3D4;
 
         /// <summary>
         /// 主版本号

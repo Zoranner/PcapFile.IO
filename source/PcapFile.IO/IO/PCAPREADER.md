@@ -1,11 +1,11 @@
-# PCAP 文件读取详细完整逻辑流程
+# PROJ 文件读取详细完整逻辑流程
 
 ## 1. 初始化阶段
 
-### 1.1 创建 PcapReader 实例
+### 1.1 创建 ProjReader 实例
 - 构造函数中初始化内部组件：
   ```csharp
-  _PcapFileReader = new PcapFileReader();
+  _ProjFileReader = new ProjFileReader();
   _PataFileReader = new PataFileReader();
   ```
 - 初始化状态变量：
@@ -27,18 +27,18 @@
   
   if (!File.Exists(filePath))
   {
-      throw new FileNotFoundException("PCAP文件不存在", filePath);
+      throw new FileNotFoundException("PROJ文件不存在", filePath);
   }
   ```
 
-- 打开PCAP工程文件：
+- 打开PROJ工程文件：
   ```csharp
-  _PcapFileReader.Open(filePath);
+  _ProjFileReader.Open(filePath);
   ```
 
-- 读取PCAP文件头：
+- 读取PROJ文件头：
   ```csharp
-  var header = _PcapFileReader.ReadHeader();
+  var header = _ProjFileReader.ReadHeader();
   _Header = header;
   _IndexInterval = header.IndexInterval;
   PacketCount = header.TotalIndexCount;
@@ -46,12 +46,12 @@
 
 - 加载文件条目表：
   ```csharp
-  _FileEntries = _PcapFileReader.ReadAllFileEntries(header.FileCount);
+  _FileEntries = _ProjFileReader.ReadAllFileEntries(header.FileCount);
   ```
 
 - 加载时间索引表：
   ```csharp
-  _TimeIndices = _PcapFileReader.ReadAllTimeIndices(header.TimeIndexOffset);
+  _TimeIndices = _ProjFileReader.ReadAllTimeIndices(header.TimeIndexOffset);
   ```
 
 - 初始化内部数据结构：
@@ -281,7 +281,7 @@
       }
       
       // 按需加载索引
-      indices = _PcapFileReader.ReadFileIndices(
+      indices = _ProjFileReader.ReadFileIndices(
           CalculateFileIndexOffset(fileId),
           entry.IndexCount
       );
@@ -337,7 +337,7 @@
       
       _CurrentFileId = fileId;
       var entry = _FileEntries[fileId];
-      var pataFilePath = PathHelper.GetFullPataFilePath(_PcapFileReader.FilePath, entry.RelativePath);
+      var pataFilePath = PathHelper.GetFullPataFilePath(_ProjFileReader.FilePath, entry.RelativePath);
       
       _PataFileReader.Open(pataFilePath);
       
@@ -360,8 +360,8 @@
           // 关闭PATA数据文件
           _PataFileReader?.Close();
           
-          // 关闭PCAP工程文件
-          _PcapFileReader?.Close();
+          // 关闭PROJ工程文件
+          _ProjFileReader?.Close();
           
           // 清空状态
           ResetState();
@@ -422,12 +422,12 @@ try
 catch (FileNotFoundException ex)
 {
     // 记录错误并向上传播
-    throw new FileNotFoundException("PCAP文件不存在", ex);
+    throw new FileNotFoundException("PROJ文件不存在", ex);
 }
 catch (FormatException ex)
 {
     // 处理文件格式错误
-    throw new FormatException("PCAP文件格式无效", ex);
+    throw new FormatException("PROJ文件格式无效", ex);
 }
 ```
 
@@ -436,7 +436,7 @@ catch (FormatException ex)
 private void OpenCurrentFile(int fileId)
 {
     // ...
-    var pataFilePath = PathHelper.GetFullPataFilePath(_PcapFileReader.FilePath, entry.RelativePath);
+    var pataFilePath = PathHelper.GetFullPataFilePath(_ProjFileReader.FilePath, entry.RelativePath);
     
     if (!File.Exists(pataFilePath))
     {
@@ -507,7 +507,7 @@ private List<PataFileIndexEntry> GetFileIndicesWithCache(uint fileId)
     }
     
     // 缓存未命中，加载索引
-    indices = _PcapFileReader.ReadFileIndices(
+    indices = _ProjFileReader.ReadFileIndices(
         CalculateFileIndexOffset(fileId),
         entry.IndexCount
     );
@@ -557,7 +557,7 @@ private async Task FillReadAheadBufferAsync(CancellationToken cancellationToken)
                 var nextFileId = _CurrentFileId + 1;
                 var entry = _FileEntries[nextFileId];
                 var pataFilePath = PathHelper.GetFullPataFilePath(
-                    _PcapFileReader.FilePath,
+                    _ProjFileReader.FilePath,
                     entry.RelativePath
                 );
                 
@@ -606,7 +606,7 @@ private async Task<List<DataPacket>> ReadPacketsParallelAsync(
             var fileEntries = new List<DataPacket>();
             var entry = _FileEntries[fileId];
             var pataFilePath = PathHelper.GetFullPataFilePath(
-                _PcapFileReader.FilePath,
+                _ProjFileReader.FilePath,
                 entry.RelativePath
             );
             

@@ -7,7 +7,7 @@ namespace KimoTech.PcapFile.IO.Interfaces
     /// <summary>
     /// 数据写入接口
     /// </summary>
-    public interface IPcapWriter : IDisposable
+    public interface IProjWriter : IDisposable
     {
         #region 属性
 
@@ -44,9 +44,9 @@ namespace KimoTech.PcapFile.IO.Interfaces
         /// 创建新的数据文件
         /// </summary>
         /// <param name="filePath">文件路径</param>
-        /// <param name="header">PCAP文件头</param>
+        /// <param name="header">PROJ文件头</param>
         /// <returns>是否成功创建</returns>
-        bool Create(string filePath, PcapFileHeader header = default);
+        bool Create(string filePath, ProjFileHeader header = default);
 
         /// <summary>
         /// 打开现有数据文件进行追加

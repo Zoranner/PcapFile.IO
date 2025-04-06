@@ -6,10 +6,10 @@ using KimoTech.PcapFile.IO.Utils;
 namespace KimoTech.PcapFile.IO.Structures
 {
     /// <summary>
-    /// PCAP文件头结构
+    /// PROJ文件头结构
     /// </summary>
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public struct PcapFileHeader
+    public struct ProjFileHeader
     {
         /// <summary>
         /// 文件头部大小(字节)
@@ -66,9 +66,9 @@ namespace KimoTech.PcapFile.IO.Structures
         /// </summary>
         public ushort Reserved { get; set; }
 
-        private PcapFileHeader(ushort fileCount, uint totalIndexCount)
+        private ProjFileHeader(ushort fileCount, uint totalIndexCount)
         {
-            MagicNumber = FileVersionConfig.PCAP_MAGIC_NUMBER;
+            MagicNumber = FileVersionConfig.PROJ_MAGIC_NUMBER;
             MajorVersion = FileVersionConfig.MAJOR_VERSION;
             MinorVersion = FileVersionConfig.MINOR_VERSION;
             FileEntryOffset = HEADER_SIZE;
@@ -81,27 +81,27 @@ namespace KimoTech.PcapFile.IO.Structures
         }
 
         /// <summary>
-        /// 创建一个新的 PcapFileHeader 实例
+        /// 创建一个新的 ProjFileHeader 实例
         /// </summary>
         /// <param name="fileCount">数据文件数量</param>
         /// <param name="totalIndexCount">总索引项数</param>
-        /// <returns>初始化后的 PcapFileHeader 实例</returns>
-        public static PcapFileHeader Create(ushort fileCount, uint totalIndexCount)
+        /// <returns>初始化后的 ProjFileHeader 实例</returns>
+        public static ProjFileHeader Create(ushort fileCount, uint totalIndexCount)
         {
-            return new PcapFileHeader(fileCount, totalIndexCount);
+            return new ProjFileHeader(fileCount, totalIndexCount);
         }
 
         /// <summary>
-        /// 从字节数组创建 PcapFileHeader 实例
+        /// 从字节数组创建 ProjFileHeader 实例
         /// </summary>
         /// <param name="bytes">字节数组</param>
-        /// <returns>PcapFileHeader 实例</returns>
+        /// <returns>ProjFileHeader 实例</returns>
         /// <exception cref="ArgumentException">当字节数组无效时抛出</exception>
-        public static PcapFileHeader FromBytes(byte[] bytes)
+        public static ProjFileHeader FromBytes(byte[] bytes)
         {
             return bytes == null || bytes.Length < HEADER_SIZE
                 ? throw new ArgumentException("Invalid header data", nameof(bytes))
-                : BinaryConverter.FromBytes<PcapFileHeader>(bytes);
+                : BinaryConverter.FromBytes<ProjFileHeader>(bytes);
         }
 
         /// <summary>

@@ -3,28 +3,28 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using KimoTech.PcapFile.IO.Extensions;
 using KimoTech.PcapFile.IO.Interfaces;
 using KimoTech.PcapFile.IO.Structures;
 using KimoTech.PcapFile.IO.Utils;
-using KimoTech.PcapFile.IO.Extensions;
 
 namespace KimoTech.PcapFile.IO
 {
     /// <summary>
-    /// PCAP数据读取器，提供PCAP文件的打开、读取和关闭操作
+    /// PROJ数据读取器，提供PROJ文件的打开、读取和关闭操作
     /// </summary>
     /// <remarks>
-    /// 该类封装了PCAP文件的底层操作，提供了简单易用的接口。
+    /// 该类封装了PROJ文件的底层操作，提供了简单易用的接口。
     /// 支持顺序读取、随机访问和时间范围查询等功能。
     /// </remarks>
-    public sealed class PcapReader : IPcapReader
+    public sealed class ProjReader : IProjReader
     {
         #region 字段
 
         /// <summary>
-        /// PCAP文件读取器，负责管理PCAP索引文件的读取
+        /// PROJ文件读取器，负责管理PROJ索引文件的读取
         /// </summary>
-        private readonly PcapFileReader _PcapFileReader;
+        private readonly ProjFileReader _ProjFileReader;
 
         /// <summary>
         /// PATA文件读取器，负责管理PATA数据文件的读取
@@ -69,18 +69,18 @@ namespace KimoTech.PcapFile.IO
         /// <summary>
         /// 文件头
         /// </summary>
-        private PcapFileHeader _Header;
+        private ProjFileHeader _Header;
 
         #endregion
 
         #region 构造函数
 
         /// <summary>
-        /// 初始化PCAP读取器的新实例
+        /// 初始化PROJ读取器的新实例
         /// </summary>
-        public PcapReader()
+        public ProjReader()
         {
-            _PcapFileReader = new PcapFileReader();
+            _ProjFileReader = new ProjFileReader();
             _PataFileReader = new PataFileReader();
             _FileEntries = new List<PataFileEntry>();
             _TimeIndices = new List<PataTimeIndexEntry>();
@@ -106,10 +106,10 @@ namespace KimoTech.PcapFile.IO
         public DateTime EndTime { get; private set; }
 
         /// <inheritdoc />
-        public string FilePath => _PcapFileReader.FilePath;
+        public string FilePath => _ProjFileReader.FilePath;
 
         /// <inheritdoc />
-        public bool IsOpen => _PcapFileReader.IsOpen;
+        public bool IsOpen => _ProjFileReader.IsOpen;
 
         #endregion
 
@@ -126,32 +126,34 @@ namespace KimoTech.PcapFile.IO
 
             if (!File.Exists(filePath))
             {
-                throw new FileNotFoundException("PCAP文件不存在", filePath);
+                throw new FileNotFoundException("PROJ文件不存在", filePath);
             }
 
             try
             {
-                // 打开PCAP工程文件
-                _PcapFileReader.Open(filePath);
+                // 打开PROJ工程文件
+                _ProjFileReader.Open(filePath);
 
-                // 读取PCAP文件头
-                var header = _PcapFileReader.ReadHeader();
+                // 读取PROJ文件头
+                var header = _ProjFileReader.ReadHeader();
                 _Header = header;
                 _IndexInterval = header.IndexInterval;
                 PacketCount = header.TotalIndexCount;
 
                 // 加载文件条目表
-                _FileEntries = _PcapFileReader.ReadAllFileEntries(header.FileCount);
+                _FileEntries = _ProjFileReader.ReadAllFileEntries(header.FileCount);
 
                 // 加载时间索引表
-                _TimeIndices = _PcapFileReader.ReadAllTimeIndices(header.TimeIndexOffset);
+                _TimeIndices = _ProjFileReader.ReadAllTimeIndices(header.TimeIndexOffset);
 
                 // 初始化时间范围
                 if (_FileEntries.Count > 0)
                 {
                     var firstEntry = _FileEntries[0];
                     var lastEntry = _FileEntries[^1];
-                    StartTime = DateTimeExtensions.FromUnixTimeMilliseconds(firstEntry.StartTimestamp);
+                    StartTime = DateTimeExtensions.FromUnixTimeMilliseconds(
+                        firstEntry.StartTimestamp
+                    );
                     EndTime = DateTimeExtensions.FromUnixTimeMilliseconds(lastEntry.EndTimestamp);
                 }
 
@@ -178,8 +180,8 @@ namespace KimoTech.PcapFile.IO
                 // 关闭PATA数据文件
                 _PataFileReader?.Close();
 
-                // 关闭PCAP工程文件
-                _PcapFileReader?.Close();
+                // 关闭PROJ工程文件
+                _ProjFileReader?.Close();
 
                 // 清空状态
                 ResetState();
@@ -312,7 +314,7 @@ namespace KimoTech.PcapFile.IO
                 {
                     break;
                 }
-                
+
                 packets.Add(packet);
             }
 
@@ -522,7 +524,7 @@ namespace KimoTech.PcapFile.IO
             _CurrentFileId = fileId;
             var entry = _FileEntries[fileId];
             var pataFilePath = PathHelper.GetFullPataFilePath(
-                _PcapFileReader.FilePath,
+                _ProjFileReader.FilePath,
                 entry.RelativePath
             );
 
@@ -545,7 +547,7 @@ namespace KimoTech.PcapFile.IO
             _CurrentFileId = fileId;
             var entry = _FileEntries[fileId];
             var pataFilePath = PathHelper.GetFullPataFilePath(
-                _PcapFileReader.FilePath,
+                _ProjFileReader.FilePath,
                 entry.RelativePath
             );
 
@@ -747,7 +749,7 @@ namespace KimoTech.PcapFile.IO
             }
 
             // 按需加载索引
-            indices = _PcapFileReader.ReadFileIndices(
+            indices = _ProjFileReader.ReadFileIndices(
                 CalculateFileIndexOffset(fileId),
                 entry.IndexCount
             );
@@ -759,12 +761,12 @@ namespace KimoTech.PcapFile.IO
         }
 
         /// <summary>
-        /// 计算文件索引在PCAP文件中的偏移量
+        /// 计算文件索引在PROJ文件中的偏移量
         /// </summary>
         private long CalculateFileIndexOffset(uint fileId)
         {
             var offset =
-                _PcapFileReader.Header.TimeIndexOffset
+                _ProjFileReader.Header.TimeIndexOffset
                 + _TimeIndices.Count * PataTimeIndexEntry.ENTRY_SIZE;
 
             // 累加之前文件的索引大小
@@ -782,7 +784,7 @@ namespace KimoTech.PcapFile.IO
         private void DisposeStreams()
         {
             _PataFileReader?.Dispose();
-            _PcapFileReader?.Dispose();
+            _ProjFileReader?.Dispose();
         }
 
         /// <summary>
@@ -792,7 +794,7 @@ namespace KimoTech.PcapFile.IO
         {
             if (_IsDisposed)
             {
-                throw new ObjectDisposedException(nameof(PcapReader));
+                throw new ObjectDisposedException(nameof(ProjReader));
             }
         }
 

@@ -2,29 +2,29 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using KimoTech.PcapFile.IO.Configuration;
+using KimoTech.PcapFile.IO.Extensions;
 using KimoTech.PcapFile.IO.Interfaces;
 using KimoTech.PcapFile.IO.Structures;
 using KimoTech.PcapFile.IO.Utils;
-using KimoTech.PcapFile.IO.Extensions;
 
 namespace KimoTech.PcapFile.IO
 {
     /// <summary>
-    /// PCAP数据写入器，提供PCAP文件的创建、打开、写入和关闭操作
+    /// PROJ数据写入器，提供PROJ文件的创建、打开、写入和关闭操作
     /// </summary>
     /// <remarks>
-    /// 该类封装了PCAP文件的底层操作，提供了简单易用的接口。
+    /// 该类封装了PROJ文件的底层操作，提供了简单易用的接口。
     /// 注意：此类设计为单线程使用，不支持多线程并发写入。
     /// 如需在异步环境中使用，请考虑在后台线程中调用此类的方法。
     /// </remarks>
-    public sealed class PcapWriter : IPcapWriter
+    public sealed class ProjWriter : IProjWriter
     {
         #region 字段
 
         /// <summary>
-        /// PCAP文件写入器，负责管理PCAP索引文件的创建、打开、写入和关闭操作
+        /// PROJ文件写入器，负责管理PROJ索引文件的创建、打开、写入和关闭操作
         /// </summary>
-        private readonly PcapFileWriter _PcapFileWriter;
+        private readonly ProjFileWriter _ProjFileWriter;
 
         /// <summary>
         /// PATA文件写入器，负责管理PATA数据文件的创建、打开、写入和关闭操作
@@ -81,15 +81,15 @@ namespace KimoTech.PcapFile.IO
         #region 构造函数
 
         /// <summary>
-        /// 初始化PCAP写入器的新实例
+        /// 初始化PROJ写入器的新实例
         /// </summary>
         /// <remarks>
-        /// 构造函数会创建PCAP和PATA文件写入器的实例。
+        /// 构造函数会创建PROJ和PATA文件写入器的实例。
         /// 这些实例会在对象释放时自动释放。
         /// </remarks>
-        public PcapWriter()
+        public ProjWriter()
         {
-            _PcapFileWriter = new PcapFileWriter();
+            _ProjFileWriter = new ProjFileWriter();
             _PataFileWriter = new PataFileWriter();
         }
 
@@ -103,7 +103,7 @@ namespace KimoTech.PcapFile.IO
         /// <inheritdoc />
         /// <remarks>
         /// 计算总文件大小时会包含：
-        /// 1. PCAP索引文件的大小
+        /// 1. PROJ索引文件的大小
         /// 2. PATA数据目录下所有数据文件的大小总和
         /// </remarks>
         public long FileSize
@@ -111,12 +111,12 @@ namespace KimoTech.PcapFile.IO
             get
             {
                 ThrowIfDisposed();
-                return _PcapFileWriter.FileSize + _TotalSize;
+                return _ProjFileWriter.FileSize + _TotalSize;
             }
         }
 
         /// <inheritdoc />
-        public string FilePath => _PcapFileWriter.FilePath;
+        public string FilePath => _ProjFileWriter.FilePath;
 
         /// <inheritdoc />
         /// <remarks>
@@ -126,7 +126,7 @@ namespace KimoTech.PcapFile.IO
         public bool AutoFlush { get; set; }
 
         /// <inheritdoc />
-        public bool IsOpen => _PcapFileWriter.IsOpen;
+        public bool IsOpen => _ProjFileWriter.IsOpen;
 
         #endregion
 
@@ -136,11 +136,11 @@ namespace KimoTech.PcapFile.IO
         /// <remarks>
         /// 创建新文件时会：
         /// 1. 创建必要的目录结构
-        /// 2. 创建PCAP索引文件
+        /// 2. 创建PROJ索引文件
         /// 3. 初始化PATA数据文件写入器
         /// 4. 写入默认的文件头信息
         /// </remarks>
-        public bool Create(string filePath, PcapFileHeader header = default)
+        public bool Create(string filePath, ProjFileHeader header = default)
         {
             ThrowIfDisposed();
             if (string.IsNullOrEmpty(filePath))
@@ -159,8 +159,8 @@ namespace KimoTech.PcapFile.IO
                     Directory.CreateDirectory(pataDirectory);
                 }
 
-                // 创建PCAP索引文件
-                _PcapFileWriter.Create(filePath);
+                // 创建PROJ索引文件
+                _ProjFileWriter.Create(filePath);
 
                 // 初始化PATA数据文件写入器
                 _PataFileWriter.Initialize(filePath);
@@ -168,17 +168,17 @@ namespace KimoTech.PcapFile.IO
                 // 写入文件头
                 if (header.MagicNumber == 0)
                 {
-                    header = PcapFileHeader.Create(0, 0); // FileCount=0, TotalIndexCount=0
-                    header.MagicNumber = FileVersionConfig.PCAP_MAGIC_NUMBER;
+                    header = ProjFileHeader.Create(0, 0); // FileCount=0, TotalIndexCount=0
+                    header.MagicNumber = FileVersionConfig.PROJ_MAGIC_NUMBER;
                     header.MajorVersion = FileVersionConfig.MAJOR_VERSION;
                     header.MinorVersion = FileVersionConfig.MINOR_VERSION;
-                    header.FileEntryOffset = PcapFileHeader.HEADER_SIZE;
+                    header.FileEntryOffset = ProjFileHeader.HEADER_SIZE;
                     header.IndexInterval = FileVersionConfig.DEFAULT_INDEX_INTERVAL;
                     header.TimeIndexOffset = 0; // 初始为0，后续更新
                     header.Checksum = 0; // 初始为0，关闭时计算
                 }
 
-                _PcapFileWriter.WriteHeader(header);
+                _ProjFileWriter.WriteHeader(header);
 
                 // 初始化内存数据结构
                 ResetState();
@@ -197,7 +197,7 @@ namespace KimoTech.PcapFile.IO
         /// <remarks>
         /// 打开现有文件时会：
         /// 1. 验证文件是否存在
-        /// 2. 打开PCAP索引文件
+        /// 2. 打开PROJ索引文件
         /// 3. 初始化PATA数据文件写入器
         /// 4. 读取文件头信息以获取数据包计数
         /// </remarks>
@@ -216,14 +216,14 @@ namespace KimoTech.PcapFile.IO
 
             try
             {
-                // 打开PCAP索引文件
-                _PcapFileWriter.Open(filePath);
+                // 打开PROJ索引文件
+                _ProjFileWriter.Open(filePath);
 
                 // 初始化PATA数据文件写入器
                 _PataFileWriter.Initialize(filePath);
 
                 // 读取文件头
-                var header = _PcapFileWriter.ReadHeader();
+                var header = _ProjFileWriter.ReadHeader();
                 PacketCount = header.TotalIndexCount;
 
                 // 初始化内存数据结构
@@ -243,8 +243,8 @@ namespace KimoTech.PcapFile.IO
         /// <remarks>
         /// 关闭文件时会：
         /// 1. 关闭PATA数据文件
-        /// 2. 更新PCAP索引文件的头信息和索引
-        /// 3. 关闭PCAP索引文件
+        /// 2. 更新PROJ索引文件的头信息和索引
+        /// 3. 关闭PROJ索引文件
         /// 4. 重置数据包计数
         /// </remarks>
         public void Close()
@@ -264,7 +264,7 @@ namespace KimoTech.PcapFile.IO
                 // 如果没有写入任何数据，直接关闭
                 if (!_FirstPacketWritten || _FileEntries.Count == 0)
                 {
-                    _PcapFileWriter.Close();
+                    _ProjFileWriter.Close();
                     PacketCount = 0;
                     return;
                 }
@@ -273,10 +273,10 @@ namespace KimoTech.PcapFile.IO
                 UpdateFileEntryIndexCounts();
 
                 // 一次性写入所有索引数据
-                _PcapFileWriter.WriteAllIndices(_FileEntries, _TimeIndices, _FileIndices);
+                _ProjFileWriter.WriteAllIndices(_FileEntries, _TimeIndices, _FileIndices);
 
-                // 关闭PCAP索引文件
-                _PcapFileWriter.Close();
+                // 关闭PROJ索引文件
+                _ProjFileWriter.Close();
             }
             catch (Exception ex)
             {
@@ -391,7 +391,7 @@ namespace KimoTech.PcapFile.IO
         /// <remarks>
         /// 刷新文件缓冲区时会：
         /// 1. 刷新PATA文件的缓冲区
-        /// 2. 刷新PCAP文件的缓冲区
+        /// 2. 刷新PROJ文件的缓冲区
         /// </remarks>
         public void Flush()
         {
@@ -402,7 +402,7 @@ namespace KimoTech.PcapFile.IO
             }
 
             _PataFileWriter.Flush();
-            _PcapFileWriter.Flush();
+            _ProjFileWriter.Flush();
         }
 
         /// <inheritdoc />
@@ -419,7 +419,7 @@ namespace KimoTech.PcapFile.IO
 
             try
             {
-                _PcapFileWriter.Seek(offset);
+                _ProjFileWriter.Seek(offset);
                 return true;
             }
             catch (Exception ex)
@@ -570,7 +570,7 @@ namespace KimoTech.PcapFile.IO
             _FileIndices[relativePath].Add(indexEntry);
 
             // 更新时间范围索引
-            var indexInterval = _PcapFileWriter.Header.IndexInterval;
+            var indexInterval = _ProjFileWriter.Header.IndexInterval;
             var packetTimestamp = packet.Header.Timestamp;
 
             // 如果时间差超过索引间隔，或者是第一个数据包，则创建时间索引
@@ -608,7 +608,7 @@ namespace KimoTech.PcapFile.IO
         /// 释放资源时会：
         /// 1. 尝试关闭文件
         /// 2. 释放PATA文件写入器的资源
-        /// 3. 释放PCAP文件写入器的资源
+        /// 3. 释放PROJ文件写入器的资源
         /// 4. 标记对象为已释放状态
         /// </remarks>
         public void Dispose()
@@ -637,7 +637,7 @@ namespace KimoTech.PcapFile.IO
         private void DisposeStreams()
         {
             _PataFileWriter?.Dispose();
-            _PcapFileWriter?.Dispose();
+            _ProjFileWriter?.Dispose();
         }
 
         /// <summary>
@@ -652,7 +652,7 @@ namespace KimoTech.PcapFile.IO
         {
             if (_IsDisposed)
             {
-                throw new ObjectDisposedException(nameof(PcapWriter));
+                throw new ObjectDisposedException(nameof(ProjWriter));
             }
         }
 

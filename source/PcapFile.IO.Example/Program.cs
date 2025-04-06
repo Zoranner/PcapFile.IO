@@ -8,7 +8,7 @@ namespace PcapFile.IO.Example
     {
         // 输出文件路径
         private const string OUTPUT_DIRECTORY = "data";
-        private const string OUTPUT_FILE_NAME = "test_output.pcap";
+        private const string OUTPUT_FILE_NAME = "test_output.proj";
 
         // 测试数据包数量
         private const int PACKET_COUNT = 1000;
@@ -56,16 +56,16 @@ namespace PcapFile.IO.Example
                     Console.WriteLine($"删除已存在的PATA目录: {pataDirectory}");
                 }
 
-                // 创建 PcapWriter 实例
-                Console.WriteLine("\n[PCAP写入测试]");
+                // 创建 ProjWriter 实例
+                Console.WriteLine("\n[PROJ写入测试]");
                 Console.WriteLine("------------------");
 
-                using var writer = new PcapWriter();
+                using var writer = new ProjWriter();
 
-                // 创建 PCAP 文件
-                Console.WriteLine("创建 PCAP 文件...");
+                // 创建 PROJ 文件
+                Console.WriteLine("创建 PROJ 文件...");
                 writer.Create(filePath);
-                Console.WriteLine($"PCAP文件已创建: {filePath}");
+                Console.WriteLine($"PROJ文件已创建: {filePath}");
 
                 // 生成并写入模拟数据包
                 Console.WriteLine($"\n开始写入 {PACKET_COUNT} 个数据包...");
@@ -97,11 +97,11 @@ namespace PcapFile.IO.Example
                 Console.WriteLine("\n[文件结构验证]");
                 Console.WriteLine("------------------");
 
-                var pcapFile = new FileInfo(filePath);
-                Console.WriteLine($"PCAP索引文件:");
-                Console.WriteLine($"  - 路径: {pcapFile.Name}");
-                Console.WriteLine($"  - 大小: {pcapFile.Length / 1024.0:F2} KB");
-                Console.WriteLine($"  - 创建时间: {pcapFile.CreationTime}");
+                var projFile = new FileInfo(filePath);
+                Console.WriteLine($"PROJ索引文件:");
+                Console.WriteLine($"  - 路径: {projFile.Name}");
+                Console.WriteLine($"  - 大小: {projFile.Length / 1024.0:F2} KB");
+                Console.WriteLine($"  - 创建时间: {projFile.CreationTime}");
 
                 var pataDir = Path.Combine(
                     Path.GetDirectoryName(filePath) ?? string.Empty,
@@ -130,13 +130,13 @@ namespace PcapFile.IO.Example
 
                     Console.WriteLine($"\n总统计信息:");
                     Console.WriteLine(
-                        $"  - 总文件数: {pataFiles.Length + 1} (1个PCAP文件 + {pataFiles.Length}个PATA文件)"
+                        $"  - 总文件数: {pataFiles.Length + 1} (1个PROJ文件 + {pataFiles.Length}个PATA文件)"
                     );
                     Console.WriteLine(
-                        $"  - 总大小: {(pcapFile.Length + totalPataSize) / 1024.0:F2} KB"
+                        $"  - 总大小: {(projFile.Length + totalPataSize) / 1024.0:F2} KB"
                     );
                     Console.WriteLine(
-                        $"  - 平均每个数据包大小: {(pcapFile.Length + totalPataSize) / PACKET_COUNT / 1024.0:F2} KB"
+                        $"  - 平均每个数据包大小: {(projFile.Length + totalPataSize) / PACKET_COUNT / 1024.0:F2} KB"
                     );
                 }
                 else
@@ -145,15 +145,15 @@ namespace PcapFile.IO.Example
                 }
 
                 // 读取测试
-                Console.WriteLine("\n[PCAP读取测试]");
+                Console.WriteLine("\n[PROJ读取测试]");
                 Console.WriteLine("------------------");
-                using var reader = new PcapReader();
+                using var reader = new ProjReader();
 
-                // 打开PCAP文件
-                Console.WriteLine($"打开PCAP文件: {filePath}");
+                // 打开PROJ文件
+                Console.WriteLine($"打开PROJ文件: {filePath}");
                 if (reader.Open(filePath))
                 {
-                    Console.WriteLine("PCAP文件打开成功");
+                    Console.WriteLine("PROJ文件打开成功");
                     Console.WriteLine($"数据包总数: {reader.PacketCount}");
                     Console.WriteLine(
                         $"时间范围: {reader.StartTime:yyyy-MM-dd HH:mm:ss.fff} - {reader.EndTime:yyyy-MM-dd HH:mm:ss.fff}"
@@ -289,12 +289,12 @@ namespace PcapFile.IO.Example
                     );
 
                     // 关闭文件
-                    Console.WriteLine("\n关闭PCAP文件...");
+                    Console.WriteLine("\n关闭PROJ文件...");
                     reader.Close();
                 }
                 else
                 {
-                    Console.WriteLine("无法打开PCAP文件");
+                    Console.WriteLine("无法打开PROJ文件");
                 }
 
                 Console.WriteLine("\n测试完成，按任意键退出...");
@@ -311,7 +311,7 @@ namespace PcapFile.IO.Example
         /// <summary>
         /// 异步读取所有数据包
         /// </summary>
-        private static async Task<int> ReadAllPacketsAsync(PcapReader reader)
+        private static async Task<int> ReadAllPacketsAsync(ProjReader reader)
         {
             int count = 0;
             using var cts = new CancellationTokenSource();

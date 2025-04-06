@@ -7,9 +7,9 @@ using KimoTech.PcapFile.IO.Structures;
 namespace KimoTech.PcapFile.IO.Interfaces
 {
     /// <summary>
-    /// PCAP数据读取器接口，定义PCAP文件的读取和定位操作
+    /// PROJ数据读取器接口，定义PROJ文件的读取和定位操作
     /// </summary>
-    public interface IPcapReader : IDisposable
+    public interface IProjReader : IDisposable
     {
         /// <summary>
         /// 获取数据包总数
@@ -42,7 +42,7 @@ namespace KimoTech.PcapFile.IO.Interfaces
         bool IsOpen { get; }
 
         /// <summary>
-        /// 打开PCAP文件
+        /// 打开PROJ文件
         /// </summary>
         /// <param name="filePath">文件路径</param>
         /// <returns>是否成功打开</returns>
@@ -52,7 +52,7 @@ namespace KimoTech.PcapFile.IO.Interfaces
         bool Open(string filePath);
 
         /// <summary>
-        /// 关闭PCAP文件
+        /// 关闭PROJ文件
         /// </summary>
         void Close();
 
