@@ -124,11 +124,11 @@ PCAP文件格式基于以下核心设计理念：
 
 项目采用的目录结构组织遵循以下规则：
 
-1. PCAP 工程文件 (.pcap) 放置在用户指定的位置
+1. PCAP 工程文件 (.proj) 放置在用户指定的位置
 2. PATA 数据文件存放在与工程文件同级的以工程文件名（不含扩展名）命名的目录中
 3. PATA 数据文件采用 `data_yyMMdd_HHmmss_fff.pata` 命名格式，其中时间戳部分根据创建时间自动生成
 
-例如，对于名为 `project.pcap` 的工程文件，其目录结构如下：
+例如，对于名为 `project.proj` 的工程文件，其目录结构如下：
 
 ![目录结构示例](drawio_files/directory_structure.drawio)
 
@@ -191,7 +191,7 @@ PCAP文件格式基于以下核心设计理念：
 - 相对路径字段使用 UTF-8 编码，支持多语言文件名
 - **重要说明**：相对路径**不包含**数据目录部分（即工程文件同名目录），仅存储数据文件名本身，如 `data_240321_110000_000.pata`
 - 实际文件定位过程：
-  1. 系统首先获取工程文件的完整路径（如 `/path/to/project.pcap`）
+  1. 系统首先获取工程文件的完整路径（如 `/path/to/project.proj`）
   2. 根据工程文件的路径提取其所在目录（如 `/path/to/`）
   3. 添加与工程文件同名的数据目录（如 `project/`）
   4. 最后添加条目表中存储的相对路径（如 `data_240321_110000_000.pata`）
@@ -575,7 +575,7 @@ using KimoTech.PcapFile.IO.Extensions;
 
 // 创建一个新的PCAP文件
 using var writer = new PcapWriter();
-writer.Create("example.pcap");
+writer.Create("example.proj");
 
 // 创建数据包
 var packetData = new byte[] { 0x01, 0x02, 0x03, 0x04 };
@@ -614,7 +614,7 @@ using KimoTech.PcapFile.IO;
 
 // 打开现有PCAP文件
 using var reader = new PcapReader();
-reader.Open("example.pcap");
+reader.Open("example.proj");
 
 // 显示文件信息
 Console.WriteLine($"文件包含 {reader.PacketCount} 个数据包");
@@ -705,7 +705,7 @@ import KimoTech.PcapFile.IO.*;
 reader = PcapReader();
 
 % 打开 PCAP 文件
-filePath = 'D:/data/project.pcap';
+filePath = 'D:/data/project.proj';
 success = reader.Open(filePath);
 
 if success
@@ -796,7 +796,7 @@ function analyzeDataFile(filePath)
     %   filePath - PCAP文件路径
     %
     % 示例:
-    %   analyzeDataFile('D:/data/project.pcap');
+    %   analyzeDataFile('D:/data/project.proj');
 
     % 导入名字空间
     import KimoTech.PcapFile.IO.*;
@@ -935,7 +935,7 @@ end
 
 ```matlab
 % 分析PCAP文件
-analyzeDataFile('D:/data/project.pcap');
+analyzeDataFile('D:/data/project.proj');
 ```
 
 通过以上方法，用户可以充分利用 MATLAB 强大的数据分析和可视化功能，对 PCAP 文件中的数据进行深入分析和处理。
@@ -966,11 +966,11 @@ analyzeDataFile('D:/data/project.pcap');
 
 **问：数据目录必须与工程文件同名吗？**
 
-答：是的，按设计，PATA数据文件应存放在与PCAP工程文件同名的目录中。例如，`project.pcap`的数据目录应为`project/`。这种设计确保了工程文件与其数据文件之间清晰的关联关系。
+答：是的，按设计，PATA数据文件应存放在与PROJ工程文件同名的目录中。例如，`project.proj`的数据目录应为`project/`。这种设计确保了工程文件与其数据文件之间清晰的关联关系。
 
 **问：工程文件中的相对路径是如何定义的？**
 
-答：工程文件中的相对路径**不包含**数据目录部分。例如，对于工程文件`/path/to/project.pcap`和数据文件`/path/to/project/data_240321_110000_000.pata`，存储在工程文件中的相对路径仅为`data_240321_110000_000.pata`，而非`project/data_240321_110000_000.pata`。
+答：工程文件中的相对路径**不包含**数据目录部分。例如，对于工程文件`/path/to/project.proj`和数据文件`/path/to/project/data_240321_110000_000.pata`，存储在工程文件中的相对路径仅为`data_240321_110000_000.pata`，而非`project/data_240321_110000_000.pata`。
 
 在读取时，系统会按照以下步骤构建完整路径：
 1. 获取工程文件所在目录（如 `/path/to/`）

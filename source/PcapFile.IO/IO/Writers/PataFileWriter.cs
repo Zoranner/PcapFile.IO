@@ -22,7 +22,7 @@ namespace KimoTech.PcapFile.IO
         private readonly string _FileNameFormat;
         private readonly byte[] _WriteBuffer;
         private int _WriteBufferPosition;
-        private string _PcapFilePath; // PCAP文件路径
+        private string _ProjFilePath; // PROJ文件路径
         #endregion
 
         #region 属性
@@ -77,14 +77,14 @@ namespace KimoTech.PcapFile.IO
         #region 公共方法
 
         /// <summary>
-        /// 初始化PATA文件写入器，仅保存PCAP文件路径，但不创建任何PATA文件
+        /// 初始化PATA文件写入器，仅保存PROJ文件路径，但不创建任何PATA文件
         /// </summary>
-        public void Initialize(string pcapFilePath)
+        public void Initialize(string projFilePath)
         {
             ThrowIfDisposed();
 
-            // 保存PCAP文件路径
-            _PcapFilePath = pcapFilePath;
+            // 保存PROJ文件路径
+            _ProjFilePath = projFilePath;
 
             // 重置状态
             CurrentPacketCount = 0;
@@ -94,10 +94,10 @@ namespace KimoTech.PcapFile.IO
         /// <summary>
         /// 创建新的PATA文件
         /// </summary>
-        public void Create(string pcapFilePath)
+        public void Create(string projFilePath)
         {
             ThrowIfDisposed();
-            Initialize(pcapFilePath);
+            Initialize(projFilePath);
         }
 
         /// <summary>
@@ -109,16 +109,16 @@ namespace KimoTech.PcapFile.IO
         {
             ThrowIfDisposed();
 
-            if (string.IsNullOrEmpty(_PcapFilePath))
+            if (string.IsNullOrEmpty(_ProjFilePath))
             {
-                throw new InvalidOperationException("PCAP文件路径未初始化");
+                throw new InvalidOperationException("PROJ文件路径未初始化");
             }
 
             // 关闭现有文件
             DisposeStreams();
 
             // 创建新文件
-            var newPath = PathHelper.GetPataFilePath(_PcapFilePath, timestamp);
+            var newPath = PathHelper.GetPataFilePath(_ProjFilePath, timestamp);
             _FileStream = StreamHelper.CreateFileStream(
                 newPath,
                 FileMode.Create,
@@ -140,15 +140,15 @@ namespace KimoTech.PcapFile.IO
         /// <summary>
         /// 打开现有的PATA文件
         /// </summary>
-        public void Open(string pcapFilePath)
+        public void Open(string projFilePath)
         {
             ThrowIfDisposed();
 
-            // 保存PCAP文件路径
-            _PcapFilePath = pcapFilePath;
+            // 保存PROJ文件路径
+            _ProjFilePath = projFilePath;
 
             CurrentPacketCount = 0;
-            var latestPataFile = PathHelper.GetLatestPataFile(pcapFilePath);
+            var latestPataFile = PathHelper.GetLatestPataFile(projFilePath);
 
             if (latestPataFile != null)
             {

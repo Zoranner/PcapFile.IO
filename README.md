@@ -19,7 +19,7 @@ PcapFile.IO 是一个用于数据记录和回放的 .NET 库，基于自定义�
 
 ## 文件格式
 
-### 工程文件 (.pcap)
+### 工程文件 (.proj)
 - 自定义 PCAP 文件格式
 - 文件头：包含魔数、版本号等基本信息
 - 文件条目表：每个数据文件的记录信息
@@ -39,7 +39,7 @@ PcapFile.IO 是一个用于数据记录和回放的 .NET 库，基于自定义�
 
 ```
 /path/to/
-├── project.pcap              # 工程文件
+├── project.proj              # 工程文件
 └── project/                  # 数据目录（与工程文件同名）
     ├── data_240321_153045_123.pata  # 数据文件1
     ├── data_240321_154012_456.pata  # 数据文件2
@@ -67,7 +67,7 @@ using KimoTech.PcapFile.IO.Extensions;
 using var writer = new PcapWriter();
 
 // 创建新工程文件
-writer.Create("data/project.pcap");
+writer.Create("data/project.proj");
 
 // 创建数据包
 var data = Encoding.UTF8.GetBytes("测试数据");
@@ -106,7 +106,7 @@ using KimoTech.PcapFile.IO.Structures;
 using var reader = new PcapReader();
 
 // 打开工程文件
-reader.Open("data/project.pcap");
+reader.Open("data/project.proj");
 
 // 显示文件信息
 Console.WriteLine($"数据包数量: {reader.PacketCount}");
@@ -133,7 +133,7 @@ using KimoTech.PcapFile.IO;
 using var reader = new PcapReader();
 
 // 打开工程文件
-reader.Open("data/project.pcap");
+reader.Open("data/project.proj");
 
 // 跳转到指定时间
 DateTime targetTime = DateTime.Now.AddMinutes(-5);
@@ -185,7 +185,7 @@ import KimoTech.PcapFile.IO.*;
 reader = PcapReader();
 
 % 打开 PCAP 文件
-reader.Open('data/project.pcap');
+reader.Open('data/project.proj');
 
 % 读取数据包
 packet = reader.ReadNextPacket();
