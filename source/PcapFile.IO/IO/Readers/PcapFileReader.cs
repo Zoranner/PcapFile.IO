@@ -224,15 +224,31 @@ namespace KimoTech.PcapFile.IO
 
                 // 计算时间索引表大小
                 var fileEntriesSize = Header.FileCount * PataFileEntry.ENTRY_SIZE;
-                var timeIndexCount =
-                    (FileSize - timeIndexOffset - fileEntriesSize) / PataTimeIndexEntry.ENTRY_SIZE;
+
+                // 安全计算时间索引表条目数量
+                long availableBytes = Math.Max(0, FileSize - timeIndexOffset - fileEntriesSize);
+                long estimatedCount = availableBytes / PataTimeIndexEntry.ENTRY_SIZE;
+
+                // 限制初始容量，防止整数溢出
+                const int maxInitialCapacity = 1000000; // 设置一个合理的初始容量上限
+                int initialCapacity = (int)Math.Min(estimatedCount, maxInitialCapacity);
 
                 // 读取所有时间索引
-                var indices = new List<PataTimeIndexEntry>((int)timeIndexCount);
-                for (int i = 0; i < timeIndexCount; i++)
+                var indices = new List<PataTimeIndexEntry>(initialCapacity);
+
+                // 使用可用字节数来控制读取，而不是预计算的数量
+                long bytesRead = 0;
+                while (bytesRead < availableBytes)
                 {
+                    // 确保不会读取超出文件末尾
+                    if (_FileStream.Position >= FileSize)
+                    {
+                        break;
+                    }
+
                     var entry = StreamHelper.ReadStructure<PataTimeIndexEntry>(_FileStream);
                     indices.Add(entry);
+                    bytesRead += PataTimeIndexEntry.ENTRY_SIZE;
                 }
 
                 return indices;
@@ -270,12 +286,30 @@ namespace KimoTech.PcapFile.IO
                 // 跳转到文件索引表开始位置
                 _FileStream.Position = fileIndexOffset;
 
+                // 限制初始容量，防止整数溢出
+                const int maxInitialCapacity = 1000000; // 设置一个合理的初始容量上限
+                int initialCapacity = (int)Math.Min(indexCount, maxInitialCapacity);
+
                 // 读取所有文件索引
-                var indices = new List<PataFileIndexEntry>((int)indexCount);
-                for (int i = 0; i < indexCount; i++)
+                var indices = new List<PataFileIndexEntry>(initialCapacity);
+
+                // 使用安全的读取方式
+                long remainingBytes = Math.Min(indexCount * PataFileIndexEntry.ENTRY_SIZE, FileSize - fileIndexOffset);
+                long bytesRead = 0;
+                int count = 0;
+
+                while (bytesRead < remainingBytes && count < indexCount)
                 {
+                    // 确保不会读取超出文件末尾
+                    if (_FileStream.Position >= FileSize)
+                    {
+                        break;
+                    }
+
                     var entry = StreamHelper.ReadStructure<PataFileIndexEntry>(_FileStream);
                     indices.Add(entry);
+                    bytesRead += PataFileIndexEntry.ENTRY_SIZE;
+                    count++;
                 }
 
                 return indices;

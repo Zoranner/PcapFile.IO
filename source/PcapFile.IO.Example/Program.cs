@@ -1,4 +1,5 @@
 ﻿using KimoTech.PcapFile.IO;
+using KimoTech.PcapFile.IO.Extensions;
 using KimoTech.PcapFile.IO.Structures;
 
 namespace PcapFile.IO.Example
@@ -17,7 +18,7 @@ namespace PcapFile.IO.Example
 
         static void Main(string[] _)
         {
-            Console.WriteLine("PcapFile.IO 示例程序 - 基础数据包写入测试");
+            Console.WriteLine("PcapFile.IO 示例程序 - 基础数据包写入和读取测试");
             Console.WriteLine("=====================================");
 
             try
@@ -69,16 +70,18 @@ namespace PcapFile.IO.Example
                 // 生成并写入模拟数据包
                 Console.WriteLine($"\n开始写入 {PACKET_COUNT} 个数据包...");
                 var startTime = DateTime.Now;
+                var timestamps = new List<DateTime>();
 
                 for (var i = 0; i < PACKET_COUNT; i++)
                 {
                     var packet = CreateSamplePacket(i, DEFAULT_PACKET_SIZE);
+                    timestamps.Add(packet.CaptureTime); // 保存捕获时间以便后续验证
                     writer.WritePacket(packet);
 
                     if (i % 5 == 0 || i == PACKET_COUNT - 1)
                     {
                         Console.WriteLine(
-                            $"已写入数据包: {i + 1}/{PACKET_COUNT}, 时间戳: {packet.Timestamp:yyyy-MM-dd HH:mm:ss.fff}, 大小: {packet.PacketLength} 字节"
+                            $"已写入数据包: {i + 1}/{PACKET_COUNT}, 捕获时间: {packet.CaptureTime:yyyy-MM-dd HH:mm:ss.fff}, 大小: {packet.PacketLength} 字节"
                         );
                     }
                 }
@@ -141,6 +144,159 @@ namespace PcapFile.IO.Example
                     Console.WriteLine($"\n错误: PATA数据目录不存在: {pataDir}");
                 }
 
+                // 读取测试
+                Console.WriteLine("\n[PCAP读取测试]");
+                Console.WriteLine("------------------");
+                using var reader = new PcapReader();
+
+                // 打开PCAP文件
+                Console.WriteLine($"打开PCAP文件: {filePath}");
+                if (reader.Open(filePath))
+                {
+                    Console.WriteLine("PCAP文件打开成功");
+                    Console.WriteLine($"数据包总数: {reader.PacketCount}");
+                    Console.WriteLine(
+                        $"时间范围: {reader.StartTime:yyyy-MM-dd HH:mm:ss.fff} - {reader.EndTime:yyyy-MM-dd HH:mm:ss.fff}"
+                    );
+
+                    // 顺序读取测试
+                    Console.WriteLine("\n[顺序读取测试]");
+                    Console.WriteLine("------------------");
+                    startTime = DateTime.Now;
+                    int sequentialReadCount = 0;
+                    int matchCount = 0;
+
+                    // 读取前10个包演示
+                    Console.WriteLine("读取前10个数据包...");
+                    for (int i = 0; i < 10; i++)
+                    {
+                        var packet = reader.ReadNextPacket();
+                        if (packet == null)
+                            break;
+
+                        sequentialReadCount++;
+                        // 验证时间是否匹配
+                        if (packet.CaptureTime == timestamps[i])
+                            matchCount++;
+
+                        Console.WriteLine(
+                            $"包 {i + 1}: 捕获时间={packet.CaptureTime:yyyy-MM-dd HH:mm:ss.fff}, 大小={packet.PacketLength} 字节"
+                        );
+                    }
+
+                    // 继续读取剩下的包但不显示详情
+                    Console.WriteLine($"继续读取剩余数据包...");
+                    reader.Reset(); // 重置到开始位置，重新读取所有包
+                    while (reader.ReadNextPacket() != null)
+                    {
+                        sequentialReadCount++;
+                    }
+
+                    elapsed = DateTime.Now - startTime;
+                    Console.WriteLine($"顺序读取完成，耗时: {elapsed.TotalSeconds:F2} 秒");
+                    Console.WriteLine($"实际读取数据包: {sequentialReadCount} 个");
+
+                    // 随机访问测试
+                    Console.WriteLine("\n[随机访问测试]");
+                    Console.WriteLine("------------------");
+
+                    // 测试随机位置访问
+                    var randomPositions = new int[] { 0, 10, 50, 100, 500, PACKET_COUNT - 1 };
+                    Console.WriteLine("测试随机位置访问...");
+                    foreach (var pos in randomPositions)
+                    {
+                        if (pos >= reader.PacketCount)
+                            continue;
+
+                        var packet = reader.ReadPacketAt(pos);
+                        Console.WriteLine(
+                            $"位置 {pos}: 捕获时间={packet?.CaptureTime:yyyy-MM-dd HH:mm:ss.fff}, 大小={packet?.PacketLength} 字节"
+                        );
+                    }
+
+                    // 测试随机时间访问
+                    if (timestamps.Count > 0)
+                    {
+                        Console.WriteLine("\n测试随机时间访问...");
+                        var randomTimes = new DateTime[]
+                        {
+                            timestamps[0], // 第一个包
+                            timestamps[10], // 第11个包
+                            timestamps[PACKET_COUNT / 2], // 中间的包
+                            timestamps[PACKET_COUNT - 1], // 最后一个包
+                            timestamps[0].AddMilliseconds(-10), // 稍早于第一个包
+                            timestamps[PACKET_COUNT - 1]
+                                .AddMilliseconds(
+                                    10
+                                ) // 稍晚于最后一个包
+                            ,
+                        };
+
+                        foreach (var time in randomTimes)
+                        {
+                            var success = reader.SeekToTime(time);
+                            var packet = success ? reader.ReadNextPacket() : null;
+                            Console.WriteLine(
+                                $"时间 {time:yyyy-MM-dd HH:mm:ss.fff}: {(success ? "定位成功" : "定位失败")}, 读取到的包: {(packet != null ? $"捕获时间={packet.CaptureTime:yyyy-MM-dd HH:mm:ss.fff}" : "无")}"
+                            );
+                        }
+                    }
+
+                    // 批量读取测试
+                    Console.WriteLine("\n[批量读取测试]");
+                    Console.WriteLine("------------------");
+                    reader.Reset();
+                    startTime = DateTime.Now;
+                    var batchSize = 100;
+                    int totalRead = 0;
+
+                    Console.WriteLine($"使用批量读取，每批 {batchSize} 个数据包...");
+                    var batches = 0;
+                    while (true)
+                    {
+                        var packets = reader.ReadPackets(batchSize);
+                        if (packets.Count == 0)
+                            break;
+
+                        totalRead += packets.Count;
+                        batches++;
+
+                        if (batches <= 3 || totalRead == reader.PacketCount) // 只显示前3批和最后一批
+                            Console.WriteLine(
+                                $"批次 {batches}: 读取了 {packets.Count} 个数据包，总计: {totalRead}"
+                            );
+                    }
+
+                    elapsed = DateTime.Now - startTime;
+                    Console.WriteLine(
+                        $"批量读取完成，总共读取 {totalRead} 个数据包，批次数: {batches}，耗时: {elapsed.TotalSeconds:F2} 秒"
+                    );
+
+                    // 异步读取测试
+                    Console.WriteLine("\n[异步读取测试]");
+                    Console.WriteLine("------------------");
+                    reader.Reset();
+                    startTime = DateTime.Now;
+
+                    Console.WriteLine("异步读取所有数据包...");
+                    var asyncReadTask = ReadAllPacketsAsync(reader);
+                    asyncReadTask.Wait();
+                    var asyncReadCount = asyncReadTask.Result;
+
+                    elapsed = DateTime.Now - startTime;
+                    Console.WriteLine(
+                        $"异步读取完成，总共读取 {asyncReadCount} 个数据包，耗时: {elapsed.TotalSeconds:F2} 秒"
+                    );
+
+                    // 关闭文件
+                    Console.WriteLine("\n关闭PCAP文件...");
+                    reader.Close();
+                }
+                else
+                {
+                    Console.WriteLine("无法打开PCAP文件");
+                }
+
                 Console.WriteLine("\n测试完成，按任意键退出...");
             }
             catch (Exception ex)
@@ -150,6 +306,29 @@ namespace PcapFile.IO.Example
             }
 
             Console.ReadKey();
+        }
+
+        /// <summary>
+        /// 异步读取所有数据包
+        /// </summary>
+        private static async Task<int> ReadAllPacketsAsync(PcapReader reader)
+        {
+            int count = 0;
+            using var cts = new CancellationTokenSource();
+
+            while (true)
+            {
+                var packets = await reader.ReadPacketsAsync(200, cts.Token);
+                if (packets.Count == 0)
+                    break;
+
+                count += packets.Count;
+
+                if (count % 1000 == 0 || count < 1000)
+                    Console.WriteLine($"已异步读取 {count} 个数据包");
+            }
+
+            return count;
         }
 
         /// <summary>
@@ -173,8 +352,10 @@ namespace PcapFile.IO.Example
                 data[i] = (byte)(i % 256);
             }
 
-            // 创建包含实际时间戳的数据包
-            var timestamp = DateTime.Now.AddMilliseconds(sequence * 100);
+            // 创建包含实际捕获时间的数据包
+            var captureTime = DateTime.Now.AddMilliseconds(sequence * 100);
+            // 将 DateTime 转换为时间戳
+            var timestamp = captureTime.ToUnixTimeMilliseconds();
             return new DataPacket(timestamp, data);
         }
     }

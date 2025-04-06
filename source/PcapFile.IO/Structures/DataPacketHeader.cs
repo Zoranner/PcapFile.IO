@@ -41,22 +41,22 @@ namespace KimoTech.PcapFile.IO.Structures
         /// <summary>
         /// 创建一个新的 DataPacketHeader 实例
         /// </summary>
-        /// <param name="timestamp">时间戳</param>
+        /// <param name="timestamp">捕获时间戳</param>
         /// <param name="packetLength">数据包长度</param>
         /// <param name="checksum">校验和</param>
         /// <returns>初始化后的 DataPacketHeader 实例</returns>
-        public static DataPacketHeader Create(DateTime timestamp, uint packetLength, uint checksum)
+        public static DataPacketHeader Create(long timestamp, uint packetLength, uint checksum)
         {
-            return new DataPacketHeader(timestamp.ToUnixTimeMilliseconds(), packetLength, checksum);
+            return new DataPacketHeader(timestamp, packetLength, checksum);
         }
 
         /// <summary>
-        /// 根据时间戳和数据包内容创建一个新的 DataPacketHeader 实例
+        /// 根据捕获时间和数据包内容创建一个新的 DataPacketHeader 实例
         /// </summary>
-        /// <param name="timestamp">时间戳</param>
+        /// <param name="timestamp">捕获时间戳</param>
         /// <param name="packetData">数据包内容</param>
         /// <returns>初始化后的 DataPacketHeader 实例</returns>
-        public static DataPacketHeader CreateFromPacket(DateTime timestamp, byte[] packetData)
+        public static DataPacketHeader CreateFromPacket(long timestamp, byte[] packetData)
         {
             if (packetData == null)
             {

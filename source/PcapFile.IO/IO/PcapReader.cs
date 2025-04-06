@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using KimoTech.PcapFile.IO.Interfaces;
 using KimoTech.PcapFile.IO.Structures;
 using KimoTech.PcapFile.IO.Utils;
+using KimoTech.PcapFile.IO.Extensions;
 
 namespace KimoTech.PcapFile.IO
 {
@@ -150,8 +151,8 @@ namespace KimoTech.PcapFile.IO
                 {
                     var firstEntry = _FileEntries[0];
                     var lastEntry = _FileEntries[^1];
-                    StartTime = DateTime.FromFileTimeUtc(firstEntry.StartTimestamp);
-                    EndTime = DateTime.FromFileTimeUtc(lastEntry.EndTimestamp);
+                    StartTime = DateTimeExtensions.FromUnixTimeMilliseconds(firstEntry.StartTimestamp);
+                    EndTime = DateTimeExtensions.FromUnixTimeMilliseconds(lastEntry.EndTimestamp);
                 }
 
                 // 初始化状态
@@ -356,7 +357,7 @@ namespace KimoTech.PcapFile.IO
         }
 
         /// <inheritdoc />
-        public bool SeekToTime(DateTime timestamp)
+        public bool SeekToTime(DateTime targetTime)
         {
             ThrowIfDisposed();
             if (!IsOpen)
@@ -365,13 +366,13 @@ namespace KimoTech.PcapFile.IO
             }
 
             // 检查时间是否在文件范围内
-            if (timestamp < StartTime || timestamp > EndTime)
+            if (targetTime < StartTime || targetTime > EndTime)
             {
                 return false;
             }
 
-            // 转换为文件时间格式
-            var targetTimestamp = timestamp.ToFileTimeUtc();
+            // 转换为Unix时间戳格式
+            var targetTimestamp = targetTime.ToUnixTimeMilliseconds();
 
             // 通过时间索引查找目标文件ID
             var fileId = FindFileIdByTime(targetTimestamp);

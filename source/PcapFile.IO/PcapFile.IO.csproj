@@ -6,7 +6,7 @@
 		<RootNamespace>KimoTech.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
 		<AssemblyName>PcapFile.IO</AssemblyName>
 		<Authors>Zoranner</Authors>
-		<AssemblyVersion>0.0.1</AssemblyVersion>
+		<AssemblyVersion>0.0.4</AssemblyVersion>
 		<Platforms>AnyCPU;x64;x86</Platforms>
 		<Copyright>$(Authors)</Copyright>
 		<Company>$(Authors)</Company>

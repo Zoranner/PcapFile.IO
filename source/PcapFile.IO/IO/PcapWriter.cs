@@ -5,6 +5,7 @@ using KimoTech.PcapFile.IO.Configuration;
 using KimoTech.PcapFile.IO.Interfaces;
 using KimoTech.PcapFile.IO.Structures;
 using KimoTech.PcapFile.IO.Utils;
+using KimoTech.PcapFile.IO.Extensions;
 
 namespace KimoTech.PcapFile.IO
 {
@@ -475,7 +476,7 @@ namespace KimoTech.PcapFile.IO
         private void InitializeFirstPacket(DataPacket packet)
         {
             // 创建第一个PATA文件，使用第一个数据包的时间戳命名
-            var pataFilePath = _PataFileWriter.CreateDataFile(packet.Timestamp);
+            var pataFilePath = _PataFileWriter.CreateDataFile(packet.CaptureTime);
 
             // 创建新的文件条目
             _CurrentFileId = 1;
@@ -536,7 +537,7 @@ namespace KimoTech.PcapFile.IO
             _PataFileWriter.Close();
 
             // 创建新文件，使用当前数据包的时间戳命名
-            var newPataFilePath = _PataFileWriter.CreateDataFile(packet.Timestamp);
+            var newPataFilePath = _PataFileWriter.CreateDataFile(packet.CaptureTime);
 
             // 创建新的文件条目
             _CurrentFileId++;
