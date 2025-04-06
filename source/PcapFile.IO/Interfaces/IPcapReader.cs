@@ -9,7 +9,7 @@ namespace KimoTech.PcapFile.IO.Interfaces
     /// <summary>
     /// PROJ数据读取器接口，定义PROJ文件的读取和定位操作
     /// </summary>
-    public interface IProjReader : IDisposable
+    public interface IPcapReader : IDisposable
     {
         /// <summary>
         /// 获取数据包总数

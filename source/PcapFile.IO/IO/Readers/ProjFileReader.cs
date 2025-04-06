@@ -163,7 +163,7 @@ namespace KimoTech.PcapFile.IO
         /// <returns>文件条目列表</returns>
         /// <exception cref="InvalidOperationException">文件未打开</exception>
         /// <exception cref="IOException">读取文件条目失败</exception>
-        public List<PataFileEntry> ReadAllFileEntries(ushort fileCount)
+        public List<PcapFileEntry> ReadAllFileEntries(ushort fileCount)
         {
             ThrowIfDisposed();
 
@@ -174,17 +174,17 @@ namespace KimoTech.PcapFile.IO
 
             if (fileCount == 0)
             {
-                return new List<PataFileEntry>();
+                return new List<PcapFileEntry>();
             }
 
             try
             {
-                var entries = new List<PataFileEntry>(fileCount);
+                var entries = new List<PcapFileEntry>(fileCount);
                 _FileStream.Position = Header.FileEntryOffset;
 
                 for (int i = 0; i < fileCount; i++)
                 {
-                    var entry = StreamHelper.ReadStructure<PataFileEntry>(_FileStream);
+                    var entry = StreamHelper.ReadStructure<PcapFileEntry>(_FileStream);
                     entries.Add(entry);
                 }
 
@@ -199,11 +199,11 @@ namespace KimoTech.PcapFile.IO
         /// <summary>
         /// 读取所有时间索引
         /// </summary>
-        /// <param name="timeIndexOffset">时间索引偏移量</param>
+        /// <param name="timeIndexOffset">时间索引表偏移量</param>
         /// <returns>时间索引列表</returns>
         /// <exception cref="InvalidOperationException">文件未打开</exception>
         /// <exception cref="IOException">读取时间索引失败</exception>
-        public List<PataTimeIndexEntry> ReadAllTimeIndices(uint timeIndexOffset)
+        public List<PcapTimeIndexEntry> ReadAllTimeIndices(uint timeIndexOffset)
         {
             ThrowIfDisposed();
 
@@ -214,7 +214,7 @@ namespace KimoTech.PcapFile.IO
 
             if (timeIndexOffset == 0)
             {
-                return new List<PataTimeIndexEntry>();
+                return new List<PcapTimeIndexEntry>();
             }
 
             try
@@ -222,19 +222,19 @@ namespace KimoTech.PcapFile.IO
                 // 跳转到时间索引表开始位置
                 _FileStream.Position = timeIndexOffset;
 
-                // 计算时间索引表大小
-                var fileEntriesSize = Header.FileCount * PataFileEntry.ENTRY_SIZE;
+                // 计算可用于时间索引的字节数
+                var fileEntriesSize = Header.FileCount * PcapFileEntry.ENTRY_SIZE;
 
                 // 安全计算时间索引表条目数量
                 long availableBytes = Math.Max(0, FileSize - timeIndexOffset - fileEntriesSize);
-                long estimatedCount = availableBytes / PataTimeIndexEntry.ENTRY_SIZE;
+                long estimatedCount = availableBytes / PcapTimeIndexEntry.ENTRY_SIZE;
 
                 // 限制初始容量，防止整数溢出
                 const int maxInitialCapacity = 1000000; // 设置一个合理的初始容量上限
                 int initialCapacity = (int)Math.Min(estimatedCount, maxInitialCapacity);
 
                 // 读取所有时间索引
-                var indices = new List<PataTimeIndexEntry>(initialCapacity);
+                var indices = new List<PcapTimeIndexEntry>(initialCapacity);
 
                 // 使用可用字节数来控制读取，而不是预计算的数量
                 long bytesRead = 0;
@@ -246,9 +246,9 @@ namespace KimoTech.PcapFile.IO
                         break;
                     }
 
-                    var entry = StreamHelper.ReadStructure<PataTimeIndexEntry>(_FileStream);
+                    var entry = StreamHelper.ReadStructure<PcapTimeIndexEntry>(_FileStream);
                     indices.Add(entry);
-                    bytesRead += PataTimeIndexEntry.ENTRY_SIZE;
+                    bytesRead += PcapTimeIndexEntry.ENTRY_SIZE;
                 }
 
                 return indices;
@@ -262,12 +262,12 @@ namespace KimoTech.PcapFile.IO
         /// <summary>
         /// 读取文件索引
         /// </summary>
-        /// <param name="fileIndexOffset">文件索引偏移量</param>
+        /// <param name="fileIndexOffset">文件索引表偏移量</param>
         /// <param name="indexCount">索引数量</param>
         /// <returns>文件索引列表</returns>
         /// <exception cref="InvalidOperationException">文件未打开</exception>
         /// <exception cref="IOException">读取文件索引失败</exception>
-        public List<PataFileIndexEntry> ReadFileIndices(long fileIndexOffset, uint indexCount)
+        public List<PcapFileIndexEntry> ReadFileIndices(long fileIndexOffset, uint indexCount)
         {
             ThrowIfDisposed();
 
@@ -278,7 +278,7 @@ namespace KimoTech.PcapFile.IO
 
             if (indexCount == 0)
             {
-                return new List<PataFileIndexEntry>();
+                return new List<PcapFileIndexEntry>();
             }
 
             try
@@ -291,11 +291,11 @@ namespace KimoTech.PcapFile.IO
                 int initialCapacity = (int)Math.Min(indexCount, maxInitialCapacity);
 
                 // 读取所有文件索引
-                var indices = new List<PataFileIndexEntry>(initialCapacity);
+                var indices = new List<PcapFileIndexEntry>(initialCapacity);
 
                 // 使用安全的读取方式
                 long remainingBytes = Math.Min(
-                    indexCount * PataFileIndexEntry.ENTRY_SIZE,
+                    indexCount * PcapFileIndexEntry.ENTRY_SIZE,
                     FileSize - fileIndexOffset
                 );
                 long bytesRead = 0;
@@ -309,9 +309,9 @@ namespace KimoTech.PcapFile.IO
                         break;
                     }
 
-                    var entry = StreamHelper.ReadStructure<PataFileIndexEntry>(_FileStream);
+                    var entry = StreamHelper.ReadStructure<PcapFileIndexEntry>(_FileStream);
                     indices.Add(entry);
-                    bytesRead += PataFileIndexEntry.ENTRY_SIZE;
+                    bytesRead += PcapFileIndexEntry.ENTRY_SIZE;
                     count++;
                 }
 

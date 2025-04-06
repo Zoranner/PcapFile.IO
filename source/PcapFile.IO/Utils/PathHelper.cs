@@ -6,131 +6,135 @@ using KimoTech.PcapFile.IO.Configuration;
 namespace KimoTech.PcapFile.IO.Utils
 {
     /// <summary>
-    /// 路径处理工具类，提供文件路径的计算和转换功能
+    /// 路径帮助类，提供路径相关的工具方法
     /// </summary>
     internal static class PathHelper
     {
         /// <summary>
-        /// 获取PATA数据目录路径
+        /// 获取PCAP数据目录路径
         /// </summary>
-        /// <param name="projFilePath">PROJ文件路径</param>
-        /// <returns>PATA数据目录路径</returns>
-        public static string GetPataDirectoryPath(string projFilePath)
+        /// <param name="projFilePath">PROJ工程文件路径</param>
+        /// <returns>PCAP数据目录路径</returns>
+        public static string GetPcapDirectoryPath(string projFilePath)
         {
             if (string.IsNullOrEmpty(projFilePath))
             {
-                throw new ArgumentException("PROJ文件路径不能为空", nameof(projFilePath));
+                throw new ArgumentNullException(nameof(projFilePath));
             }
 
             // 获取PROJ文件所在目录
-            string directory = Path.GetDirectoryName(projFilePath);
+            string projDirectory = Path.GetDirectoryName(projFilePath);
 
-            // 获取PROJ文件名（不含扩展名）作为数据目录名
-            string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(projFilePath);
+            // 获取PROJ文件名（不包含扩展名）
+            string projName = Path.GetFileNameWithoutExtension(projFilePath);
 
-            // 返回PATA数据目录路径
-            return Path.Combine(directory, fileNameWithoutExtension);
+            // 返回PCAP数据目录路径
+            return Path.Combine(projDirectory, projName);
         }
 
         /// <summary>
-        /// 根据时间戳创建PATA文件路径
+        /// 根据时间戳创建PCAP文件路径
         /// </summary>
-        /// <param name="projFilePath">PROJ文件路径</param>
+        /// <param name="projFilePath">PROJ工程文件路径</param>
         /// <param name="timestamp">时间戳</param>
-        /// <returns>PATA文件路径</returns>
-        public static string GetPataFilePath(string projFilePath, DateTime timestamp)
+        /// <returns>PCAP文件路径</returns>
+        public static string GetPcapFilePath(string projFilePath, DateTime timestamp)
         {
             if (string.IsNullOrEmpty(projFilePath))
             {
-                throw new ArgumentException("PROJ文件路径不能为空", nameof(projFilePath));
+                throw new ArgumentNullException(nameof(projFilePath));
             }
 
-            // 获取PATA数据目录路径
-            string pataDirectory = GetPataDirectoryPath(projFilePath);
+            // 获取PCAP数据目录路径
+            string pcapDirectory = GetPcapDirectoryPath(projFilePath);
 
-            // 使用时间戳格式化文件名
-            string fileName = $"data_{timestamp:yyMMdd_HHmmss_fff}.pata";
+            // 确保目录存在
+            Directory.CreateDirectory(pcapDirectory);
 
-            // 返回完整的PATA文件路径
-            return Path.Combine(pataDirectory, fileName);
+            // 创建文件名：data_yyMMdd_HHmmss_fff.pcap
+            string fileName = $"data_{timestamp:yyMMdd_HHmmss_fff}.pcap";
+
+            // 返回完整的PCAP文件路径
+            return Path.Combine(pcapDirectory, fileName);
         }
 
         /// <summary>
-        /// 获取PATA文件的完整路径
+        /// 获取PCAP文件的完整路径
         /// </summary>
-        /// <param name="projFilePath">PROJ文件路径</param>
-        /// <param name="relativePath">PATA文件相对路径</param>
-        /// <returns>PATA文件完整路径</returns>
-        public static string GetFullPataFilePath(string projFilePath, string relativePath)
+        /// <param name="projFilePath">PROJ工程文件路径</param>
+        /// <param name="relativePath">PCAP文件相对路径</param>
+        /// <returns>PCAP文件完整路径</returns>
+        public static string GetFullPcapFilePath(string projFilePath, string relativePath)
         {
             if (string.IsNullOrEmpty(projFilePath))
             {
-                throw new ArgumentException("PROJ文件路径不能为空", nameof(projFilePath));
+                throw new ArgumentNullException(nameof(projFilePath));
             }
 
             if (string.IsNullOrEmpty(relativePath))
             {
-                throw new ArgumentException("相对路径不能为空", nameof(relativePath));
+                throw new ArgumentNullException(nameof(relativePath));
             }
 
-            // 获取PATA数据目录路径
-            string pataDirectory = GetPataDirectoryPath(projFilePath);
+            // 获取PCAP数据目录路径
+            string pcapDirectory = GetPcapDirectoryPath(projFilePath);
 
-            // 返回完整的PATA文件路径
-            return Path.Combine(pataDirectory, relativePath);
+            // 返回完整的PCAP文件路径
+            return Path.Combine(pcapDirectory, relativePath);
         }
 
         /// <summary>
-        /// 获取最新的PATA文件路径
+        /// 获取最新的PCAP文件路径
         /// </summary>
-        /// <param name="projFilePath">PROJ文件路径</param>
-        /// <returns>最新的PATA文件路径，如果不存在则返回null</returns>
-        public static string GetLatestPataFile(string projFilePath)
+        /// <param name="projFilePath">PROJ工程文件路径</param>
+        /// <returns>最新的PCAP文件路径，如果不存在则返回null</returns>
+        public static string GetLatestPcapFile(string projFilePath)
         {
             if (string.IsNullOrEmpty(projFilePath))
             {
-                throw new ArgumentException("PROJ文件路径不能为空", nameof(projFilePath));
+                throw new ArgumentNullException(nameof(projFilePath));
             }
 
-            // 获取PATA数据目录路径
-            string pataDirectory = GetPataDirectoryPath(projFilePath);
+            // 获取PCAP数据目录路径
+            string pcapDirectory = GetPcapDirectoryPath(projFilePath);
 
             // 检查目录是否存在
-            if (!Directory.Exists(pataDirectory))
+            if (!Directory.Exists(pcapDirectory))
             {
                 return null;
             }
 
-            // 获取所有PATA文件
-            var files = Directory.GetFiles(pataDirectory, "*.pata");
+            // 获取所有PCAP文件
+            var files = Directory.GetFiles(pcapDirectory, "*.pcap");
+
+            // 如果没有文件，返回null
             if (files.Length == 0)
             {
                 return null;
             }
 
-            // 找到最新的文件（按文件名排序，因为文件名包含日期时间）
-            Array.Sort(files);
-            return files[files.Length - 1];
+            // 返回最新的文件
+            return files.OrderByDescending(f => new FileInfo(f).CreationTime).First();
         }
 
         /// <summary>
-        /// 清空PATA目录
+        /// 清空PCAP目录
         /// </summary>
-        /// <param name="projFilePath">PROJ文件路径</param>
+        /// <param name="projFilePath">PROJ工程文件路径</param>
         /// <returns>是否成功清空</returns>
-        /// <exception cref="ArgumentException">PROJ文件路径为空或无法获取目录路径</exception>
-        public static bool ClearPataDirectory(string projFilePath)
+        public static bool ClearPcapDirectory(string projFilePath)
         {
-            var pataDirectory = GetPataDirectoryPath(projFilePath);
-            if (!Directory.Exists(pataDirectory))
+            var pcapDirectory = GetPcapDirectoryPath(projFilePath);
+            if (!Directory.Exists(pcapDirectory))
             {
-                return true;
+                return false;
             }
 
             try
             {
-                Directory.Delete(pataDirectory, true);
-                Directory.CreateDirectory(pataDirectory);
+                // 删除目录及其所有内容，然后重新创建
+                Directory.Delete(pcapDirectory, true);
+                Directory.CreateDirectory(pcapDirectory);
                 return true;
             }
             catch

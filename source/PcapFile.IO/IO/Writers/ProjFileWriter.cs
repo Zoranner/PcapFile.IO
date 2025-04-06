@@ -217,8 +217,8 @@ namespace KimoTech.PcapFile.IO
         /// <exception cref="IOException">更新文件时发生错误</exception>
         /// <exception cref="ObjectDisposedException">对象已释放</exception>
         public ProjFileHeader CalculateAndUpdateChecksum(
-            List<PataFileEntry> fileEntries,
-            List<PataTimeIndexEntry> timeIndices,
+            List<PcapFileEntry> fileEntries,
+            List<PcapTimeIndexEntry> timeIndices,
             uint totalPacketCount
         )
         {
@@ -237,7 +237,7 @@ namespace KimoTech.PcapFile.IO
 
             // 计算偏移量
             updatedHeader.TimeIndexOffset =
-                updatedHeader.FileEntryOffset + (uint)fileEntries.Count * PataFileEntry.ENTRY_SIZE;
+                updatedHeader.FileEntryOffset + (uint)fileEntries.Count * PcapFileEntry.ENTRY_SIZE;
 
             // 将校验和设置为0进行计算
             var headerBytes = updatedHeader.ToBytes();
@@ -248,19 +248,19 @@ namespace KimoTech.PcapFile.IO
             // 写入文件条目
             foreach (var entry in fileEntries)
             {
-                _FileStream.Write(entry.ToBytes(), 0, PataFileEntry.ENTRY_SIZE);
+                _FileStream.Write(entry.ToBytes(), 0, PcapFileEntry.ENTRY_SIZE);
             }
 
             // 写入时间索引
             foreach (var entry in timeIndices)
             {
-                _FileStream.Write(entry.ToBytes(), 0, PataTimeIndexEntry.ENTRY_SIZE);
+                _FileStream.Write(entry.ToBytes(), 0, PcapTimeIndexEntry.ENTRY_SIZE);
             }
 
             // 计算CRC32校验和
             var bytes = new byte[
                 updatedHeader.FileEntryOffset
-                    + updatedHeader.TotalIndexCount * PataFileEntry.ENTRY_SIZE
+                    + updatedHeader.TotalIndexCount * PcapFileEntry.ENTRY_SIZE
             ];
             _FileStream.Seek(0, SeekOrigin.Begin);
             _FileStream.Read(bytes, 0, bytes.Length);
@@ -279,9 +279,9 @@ namespace KimoTech.PcapFile.IO
         /// <param name="timeIndices">时间索引列表</param>
         /// <param name="fileIndices">文件索引字典</param>
         public void WriteAllIndices(
-            List<PataFileEntry> fileEntries,
-            List<PataTimeIndexEntry> timeIndices,
-            Dictionary<string, List<PataFileIndexEntry>> fileIndices
+            List<PcapFileEntry> fileEntries,
+            List<PcapTimeIndexEntry> timeIndices,
+            Dictionary<string, List<PcapFileIndexEntry>> fileIndices
         )
         {
             ThrowIfDisposed();
@@ -309,13 +309,13 @@ namespace KimoTech.PcapFile.IO
                 // 写入文件条目表
                 foreach (var entry in fileEntries)
                 {
-                    _FileStream.Write(entry.ToBytes(), 0, PataFileEntry.ENTRY_SIZE);
+                    _FileStream.Write(entry.ToBytes(), 0, PcapFileEntry.ENTRY_SIZE);
                 }
 
                 // 写入时间范围索引表
                 foreach (var entry in timeIndices)
                 {
-                    _FileStream.Write(entry.ToBytes(), 0, PataTimeIndexEntry.ENTRY_SIZE);
+                    _FileStream.Write(entry.ToBytes(), 0, PcapTimeIndexEntry.ENTRY_SIZE);
                 }
 
                 // 写入文件索引表
@@ -328,7 +328,7 @@ namespace KimoTech.PcapFile.IO
                             _FileStream.Write(
                                 indexEntry.ToBytes(),
                                 0,
-                                PataFileIndexEntry.ENTRY_SIZE
+                                PcapFileIndexEntry.ENTRY_SIZE
                             );
                         }
                     }
@@ -349,7 +349,7 @@ namespace KimoTech.PcapFile.IO
         /// <param name="entry">索引条目</param>
         /// <exception cref="ArgumentNullException">entry为null</exception>
         /// <exception cref="ObjectDisposedException">对象已释放</exception>
-        public void WriteIndexEntry(PataFileIndexEntry entry)
+        public void WriteIndexEntry(PcapFileIndexEntry entry)
         {
             ThrowIfDisposed();
 
@@ -358,7 +358,7 @@ namespace KimoTech.PcapFile.IO
                 throw new InvalidOperationException("文件流未初始化");
             }
 
-            _FileStream.Write(entry.ToBytes(), 0, PataFileIndexEntry.ENTRY_SIZE);
+            _FileStream.Write(entry.ToBytes(), 0, PcapFileIndexEntry.ENTRY_SIZE);
         }
 
         /// <summary>
@@ -408,6 +408,95 @@ namespace KimoTech.PcapFile.IO
             }
 
             _FileStream.Position = position;
+        }
+
+        /// <summary>
+        /// 更新工程文件信息
+        /// </summary>
+        /// <param name="fileCount">文件数量</param>
+        /// <param name="totalIndexCount">总索引项数</param>
+        /// <param name="fileEntries">文件条目列表</param>
+        /// <param name="timeIndices">时间索引列表</param>
+        public void UpdateProjectInfo(
+            ushort fileCount,
+            uint totalIndexCount,
+            List<PcapFileEntry> fileEntries,
+            List<PcapTimeIndexEntry> timeIndices
+        )
+        {
+            // ... existing code ...
+
+            // 更新文件条目表偏移量
+            updatedHeader.FileEntryOffset = ProjFileHeader.HEADER_SIZE;
+
+            // 更新时间索引表偏移量
+            updatedHeader.TimeIndexOffset =
+                updatedHeader.FileEntryOffset + (uint)fileEntries.Count * PcapFileEntry.ENTRY_SIZE;
+
+            // ... existing code ...
+
+            // 写入文件条目
+            foreach (var entry in fileEntries)
+            {
+                _FileStream.Write(entry.ToBytes(), 0, PcapFileEntry.ENTRY_SIZE);
+            }
+
+            // 写入时间索引
+            foreach (var entry in timeIndices)
+            {
+                _FileStream.Write(entry.ToBytes(), 0, PcapTimeIndexEntry.ENTRY_SIZE);
+            }
+
+            // ... existing code ...
+        }
+
+        /// <summary>
+        /// 更新工程文件信息并写入文件索引
+        /// </summary>
+        public void UpdateProjectInfoAndIndices(
+            ushort fileCount,
+            uint totalIndexCount,
+            List<PcapFileEntry> fileEntries,
+            List<PcapTimeIndexEntry> timeIndices,
+            Dictionary<string, List<PcapFileIndexEntry>> fileIndices
+        )
+        {
+            // ... existing code ...
+
+            // 更新文件条目表偏移量
+            updatedHeader.FileEntryOffset = ProjFileHeader.HEADER_SIZE;
+
+            // 更新时间索引表偏移量
+            updatedHeader.TimeIndexOffset =
+                updatedHeader.FileEntryOffset + (uint)fileEntries.Count * PcapFileEntry.ENTRY_SIZE;
+
+            // ... existing code ...
+
+            // 写入文件条目
+            foreach (var entry in fileEntries)
+            {
+                _FileStream.Write(entry.ToBytes(), 0, PcapFileEntry.ENTRY_SIZE);
+            }
+
+            // 写入时间索引
+            foreach (var entry in timeIndices)
+            {
+                _FileStream.Write(entry.ToBytes(), 0, PcapTimeIndexEntry.ENTRY_SIZE);
+            }
+
+            // 写入文件索引
+            foreach (var fileEntry in fileEntries)
+            {
+                if (fileIndices.TryGetValue(fileEntry.RelativePath, out var indices))
+                {
+                    foreach (var indexEntry in indices)
+                    {
+                        _FileStream.Write(indexEntry.ToBytes(), 0, PcapFileIndexEntry.ENTRY_SIZE);
+                    }
+                }
+            }
+
+            // ... existing code ...
         }
 
         #endregion

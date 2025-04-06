@@ -53,14 +53,14 @@ namespace PcapFile.IO.Example
                 if (Directory.Exists(pataDirectory))
                 {
                     Directory.Delete(pataDirectory, true);
-                    Console.WriteLine($"删除已存在的PATA目录: {pataDirectory}");
+                    Console.WriteLine($"删除已存在的PCAP目录: {pataDirectory}");
                 }
 
                 // 创建 ProjWriter 实例
                 Console.WriteLine("\n[PROJ写入测试]");
                 Console.WriteLine("------------------");
 
-                using var writer = new ProjWriter();
+                using var writer = new PcapWriter();
 
                 // 创建 PROJ 文件
                 Console.WriteLine("创建 PROJ 文件...");
@@ -103,51 +103,51 @@ namespace PcapFile.IO.Example
                 Console.WriteLine($"  - 大小: {projFile.Length / 1024.0:F2} KB");
                 Console.WriteLine($"  - 创建时间: {projFile.CreationTime}");
 
-                var pataDir = Path.Combine(
+                var pcapDir = Path.Combine(
                     Path.GetDirectoryName(filePath) ?? string.Empty,
                     Path.GetFileNameWithoutExtension(filePath)
                 );
-                if (Directory.Exists(pataDir))
+                if (Directory.Exists(pcapDir))
                 {
-                    Console.WriteLine($"\nPATA数据目录:");
-                    Console.WriteLine($"  - 路径: {pataDir}");
+                    Console.WriteLine($"\nPCAP数据目录:");
+                    Console.WriteLine($"  - 路径: {pcapDir}");
 
-                    // 递归查找所有.pata文件
-                    var pataFiles = Directory.GetFiles(
-                        pataDir,
-                        "*.pata",
+                    // 递归查找所有.pcap文件
+                    var pcapFiles = Directory.GetFiles(
+                        pcapDir,
+                        "*.pcap",
                         SearchOption.AllDirectories
                     );
-                    Console.WriteLine($"  - 包含 {pataFiles.Length} 个PATA数据文件");
+                    Console.WriteLine($"  - 包含 {pcapFiles.Length} 个PCAP数据文件");
 
-                    long totalPataSize = 0;
-                    foreach (var pataFilePath in pataFiles)
+                    long totalPcapSize = 0;
+                    foreach (var pcapFilePath in pcapFiles)
                     {
-                        var file = new FileInfo(pataFilePath);
-                        totalPataSize += file.Length;
+                        var file = new FileInfo(pcapFilePath);
+                        totalPcapSize += file.Length;
                         Console.WriteLine($"    * {file.Name} - {file.Length / 1024.0:F2} KB");
                     }
 
                     Console.WriteLine($"\n总统计信息:");
                     Console.WriteLine(
-                        $"  - 总文件数: {pataFiles.Length + 1} (1个PROJ文件 + {pataFiles.Length}个PATA文件)"
+                        $"  - 总文件数: {pcapFiles.Length + 1} (1个PROJ文件 + {pcapFiles.Length}个PCAP文件)"
                     );
                     Console.WriteLine(
-                        $"  - 总大小: {(projFile.Length + totalPataSize) / 1024.0:F2} KB"
+                        $"  - 总大小: {(projFile.Length + totalPcapSize) / 1024.0:F2} KB"
                     );
                     Console.WriteLine(
-                        $"  - 平均每个数据包大小: {(projFile.Length + totalPataSize) / PACKET_COUNT / 1024.0:F2} KB"
+                        $"  - 平均每个数据包大小: {(projFile.Length + totalPcapSize) / PACKET_COUNT / 1024.0:F2} KB"
                     );
                 }
                 else
                 {
-                    Console.WriteLine($"\n错误: PATA数据目录不存在: {pataDir}");
+                    Console.WriteLine($"\n错误: PCAP数据目录不存在: {pcapDir}");
                 }
 
                 // 读取测试
                 Console.WriteLine("\n[PROJ读取测试]");
                 Console.WriteLine("------------------");
-                using var reader = new ProjReader();
+                using var reader = new PcapReader();
 
                 // 打开PROJ文件
                 Console.WriteLine($"打开PROJ文件: {filePath}");
@@ -311,7 +311,7 @@ namespace PcapFile.IO.Example
         /// <summary>
         /// 异步读取所有数据包
         /// </summary>
-        private static async Task<int> ReadAllPacketsAsync(ProjReader reader)
+        private static async Task<int> ReadAllPacketsAsync(PcapReader reader)
         {
             int count = 0;
             using var cts = new CancellationTokenSource();

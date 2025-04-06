@@ -4,15 +4,15 @@ using KimoTech.PcapFile.IO.Configuration;
 using KimoTech.PcapFile.IO.Structures;
 using KimoTech.PcapFile.IO.Utils;
 
-namespace KimoTech.PcapFile.IO
+namespace KimoTech.PcapFile.IO.Writers
 {
     /// <summary>
-    /// PATA文件写入器，负责管理PATA数据文件的创建、打开、写入和关闭操作
+    /// PCAP文件写入器，负责管理PCAP数据文件的创建、打开、写入和关闭操作
     /// </summary>
     /// <remarks>
     /// 注意：此类设计为单线程使用，不支持多线程并发写入。
     /// </remarks>
-    internal class PataFileWriter : IDisposable
+    internal class PcapFileWriter : IDisposable
     {
         #region 字段
 
@@ -28,7 +28,7 @@ namespace KimoTech.PcapFile.IO
         #region 属性
 
         /// <summary>
-        /// 获取当前PATA文件路径
+        /// 获取当前PCAP文件路径
         /// </summary>
         public string FilePath { get; private set; }
 
@@ -57,11 +57,16 @@ namespace KimoTech.PcapFile.IO
         /// </summary>
         public int MaxPacketsPerFile { get; }
 
+        /// <summary>
+        /// 获取文件头信息
+        /// </summary>
+        public PcapFileHeader Header { get; private set; }
+
         #endregion
 
         #region 构造函数
 
-        public PataFileWriter(
+        public PcapFileWriter(
             int maxPacketsPerFile = FileVersionConfig.DEFAULT_MAX_PACKETS_PER_FILE,
             string fileNameFormat = FileVersionConfig.DEFAULT_FILE_NAME_FORMAT,
             int bufferSize = FileVersionConfig.MAX_BUFFER_SIZE
@@ -77,7 +82,7 @@ namespace KimoTech.PcapFile.IO
         #region 公共方法
 
         /// <summary>
-        /// 初始化PATA文件写入器，仅保存PROJ文件路径，但不创建任何PATA文件
+        /// 初始化PCAP文件写入器，仅保存PROJ文件路径，但不创建任何PCAP文件
         /// </summary>
         public void Initialize(string projFilePath)
         {
@@ -92,7 +97,7 @@ namespace KimoTech.PcapFile.IO
         }
 
         /// <summary>
-        /// 创建新的PATA文件
+        /// 创建新的PCAP文件
         /// </summary>
         public void Create(string projFilePath)
         {
@@ -101,7 +106,7 @@ namespace KimoTech.PcapFile.IO
         }
 
         /// <summary>
-        /// 创建特定时间戳的PATA文件
+        /// 创建特定时间戳的PCAP文件
         /// </summary>
         /// <param name="timestamp">用于命名的时间戳</param>
         /// <returns>创建的文件路径</returns>
@@ -118,7 +123,7 @@ namespace KimoTech.PcapFile.IO
             DisposeStreams();
 
             // 创建新文件
-            var newPath = PathHelper.GetPataFilePath(_ProjFilePath, timestamp);
+            var newPath = PathHelper.GetPcapFilePath(_ProjFilePath, timestamp);
             _FileStream = StreamHelper.CreateFileStream(
                 newPath,
                 FileMode.Create,
@@ -132,13 +137,13 @@ namespace KimoTech.PcapFile.IO
             CurrentPacketCount = 0;
 
             // 写入文件头
-            WriteHeader(PataFileHeader.Create(0));
+            WriteHeader(PcapFileHeader.Create(0));
 
             return newPath;
         }
 
         /// <summary>
-        /// 打开现有的PATA文件
+        /// 打开现有的PCAP文件
         /// </summary>
         public void Open(string projFilePath)
         {
@@ -148,11 +153,11 @@ namespace KimoTech.PcapFile.IO
             _ProjFilePath = projFilePath;
 
             CurrentPacketCount = 0;
-            var latestPataFile = PathHelper.GetLatestPataFile(projFilePath);
+            var latestPcapFile = PathHelper.GetLatestPcapFile(projFilePath);
 
-            if (latestPataFile != null)
+            if (latestPcapFile != null)
             {
-                FilePath = latestPataFile;
+                FilePath = latestPcapFile;
                 _FileStream = StreamHelper.CreateFileStream(
                     FilePath,
                     FileMode.Open,
@@ -161,17 +166,17 @@ namespace KimoTech.PcapFile.IO
                 );
                 _BinaryWriter = StreamHelper.CreateBinaryWriter(_FileStream);
 
-                StreamHelper.ReadStructure<PataFileHeader>(_FileStream);
+                StreamHelper.ReadStructure<PcapFileHeader>(_FileStream);
                 CurrentPacketCount = (int)(
-                    (_FileStream.Length - PataFileHeader.HEADER_SIZE) / DataPacketHeader.HEADER_SIZE
+                    (_FileStream.Length - PcapFileHeader.HEADER_SIZE) / DataPacketHeader.HEADER_SIZE
                 );
             }
         }
 
         /// <summary>
-        /// 写入PATA文件头
+        /// 写入PCAP文件头
         /// </summary>
-        public void WriteHeader(PataFileHeader header)
+        public void WriteHeader(PcapFileHeader header)
         {
             ThrowIfDisposed();
 
@@ -186,7 +191,7 @@ namespace KimoTech.PcapFile.IO
         }
 
         /// <summary>
-        /// 写入数据包到PATA文件
+        /// 写入数据包到PCAP文件
         /// </summary>
         /// <returns>数据包在文件中的偏移量</returns>
         public long WritePacket(DataPacket packet)
@@ -346,7 +351,7 @@ namespace KimoTech.PcapFile.IO
         {
             if (_IsDisposed)
             {
-                throw new ObjectDisposedException(nameof(PataFileWriter));
+                throw new ObjectDisposedException(nameof(PcapFileWriter));
             }
         }
 

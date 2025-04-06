@@ -7,7 +7,7 @@ namespace KimoTech.PcapFile.IO.Interfaces
     /// <summary>
     /// 数据写入接口
     /// </summary>
-    public interface IProjWriter : IDisposable
+    public interface IPcapWriter : IDisposable
     {
         #region 属性
 

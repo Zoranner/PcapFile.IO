@@ -6,9 +6,9 @@ namespace KimoTech.PcapFile.IO.Configuration
     public static class FileVersionConfig
     {
         /// <summary>
-        /// PATA文件标识 ("PATA")
+        /// PCAP文件标识 ("PCAP")
         /// </summary>
-        public const uint PATA_MAGIC_NUMBER = 0x50415441;
+        public const uint PCAP_MAGIC_NUMBER = 0x50415441;
 
         /// <summary>
         /// PROJ文件标识 ("PROJ")
@@ -36,7 +36,7 @@ namespace KimoTech.PcapFile.IO.Configuration
         public const ushort DEFAULT_INDEX_INTERVAL = 1000;
 
         /// <summary>
-        /// 每个PATA文件最大数据包数量
+        /// 每个PCAP文件最大数据包数量
         /// </summary>
         public const int DEFAULT_MAX_PACKETS_PER_FILE = 500;
 

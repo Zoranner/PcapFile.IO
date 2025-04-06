@@ -6,10 +6,10 @@ using KimoTech.PcapFile.IO.Utils;
 namespace KimoTech.PcapFile.IO.Structures
 {
     /// <summary>
-    /// PATA数据文件头结构
+    /// PCAP数据文件头结构
     /// </summary>
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public struct PataFileHeader
+    public struct PcapFileHeader
     {
         /// <summary>
         /// 文件头部大小(字节)
@@ -22,7 +22,7 @@ namespace KimoTech.PcapFile.IO.Structures
         public const uint DEFAULT_TIMESTAMP_ACCURACY = 1000;
 
         /// <summary>
-        /// 魔术数，固定值 0x50415441 ("PATA")
+        /// 魔术数，固定值 0x50415441 ("PCAP")
         /// </summary>
         public uint MagicNumber { get; set; }
 
@@ -46,9 +46,9 @@ namespace KimoTech.PcapFile.IO.Structures
         /// </summary>
         public uint TimestampAccuracy { get; set; }
 
-        private PataFileHeader(int timezone)
+        private PcapFileHeader(int timezone)
         {
-            MagicNumber = FileVersionConfig.PATA_MAGIC_NUMBER;
+            MagicNumber = FileVersionConfig.PCAP_MAGIC_NUMBER;
             MajorVersion = FileVersionConfig.MAJOR_VERSION;
             MinorVersion = FileVersionConfig.MINOR_VERSION;
             Timezone = timezone;
@@ -56,26 +56,26 @@ namespace KimoTech.PcapFile.IO.Structures
         }
 
         /// <summary>
-        /// 创建一个新的 PataFileHeader 实例
+        /// 创建一个新的 PcapFileHeader 实例
         /// </summary>
         /// <param name="timezone">时区偏移量(GMT)</param>
-        /// <returns>初始化后的 PataFileHeader 实例</returns>
-        public static PataFileHeader Create(int timezone)
+        /// <returns>初始化后的 PcapFileHeader 实例</returns>
+        public static PcapFileHeader Create(int timezone)
         {
-            return new PataFileHeader(timezone);
+            return new PcapFileHeader(timezone);
         }
 
         /// <summary>
-        /// 从字节数组创建 PataFileHeader 实例
+        /// 从字节数组创建 PcapFileHeader 实例
         /// </summary>
         /// <param name="bytes">字节数组</param>
-        /// <returns>PataFileHeader 实例</returns>
+        /// <returns>PcapFileHeader 实例</returns>
         /// <exception cref="ArgumentException">当字节数组无效时抛出</exception>
-        public static PataFileHeader FromBytes(byte[] bytes)
+        public static PcapFileHeader FromBytes(byte[] bytes)
         {
             return bytes == null || bytes.Length < HEADER_SIZE
                 ? throw new ArgumentException("Invalid header data", nameof(bytes))
-                : BinaryConverter.FromBytes<PataFileHeader>(bytes);
+                : BinaryConverter.FromBytes<PcapFileHeader>(bytes);
         }
 
         /// <summary>
