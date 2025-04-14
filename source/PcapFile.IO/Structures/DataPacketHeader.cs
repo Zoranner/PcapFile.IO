@@ -1,9 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
-using KimoTech.PcapFile.IO.Extensions;
-using KimoTech.PcapFile.IO.Utils;
 
-namespace KimoTech.PcapFile.IO.Structures
+namespace KimoTech.PcapFile.IO
 {
     /// <summary>
     /// 数据包结构

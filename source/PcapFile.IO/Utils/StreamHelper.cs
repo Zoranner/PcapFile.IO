@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace KimoTech.PcapFile.IO.Utils
+namespace KimoTech.PcapFile.IO
 {
     /// <summary>
     /// 流处理工具类

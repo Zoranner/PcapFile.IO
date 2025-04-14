@@ -1,4 +1,4 @@
-namespace KimoTech.PcapFile.IO.Configuration
+namespace KimoTech.PcapFile.IO
 {
     /// <summary>
     /// 文件版本配置

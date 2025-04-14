@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
-using KimoTech.PcapFile.IO.Structures;
 
-namespace KimoTech.PcapFile.IO.Interfaces
+namespace KimoTech.PcapFile.IO
 {
     /// <summary>
     /// 数据写入接口

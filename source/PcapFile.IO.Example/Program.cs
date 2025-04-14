@@ -1,5 +1,4 @@
 ﻿using KimoTech.PcapFile.IO;
-using KimoTech.PcapFile.IO.Structures;
 
 namespace PcapFile.IO.Example
 {

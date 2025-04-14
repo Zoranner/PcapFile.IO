@@ -1,10 +1,7 @@
 using System;
 using System.IO;
-using KimoTech.PcapFile.IO.Configuration;
-using KimoTech.PcapFile.IO.Structures;
-using KimoTech.PcapFile.IO.Utils;
 
-namespace KimoTech.PcapFile.IO.Writers
+namespace KimoTech.PcapFile.IO
 {
     /// <summary>
     /// PCAP文件写入器，负责管理PCAP数据文件的创建、打开、写入和关闭操作

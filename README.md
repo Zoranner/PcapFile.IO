@@ -51,8 +51,6 @@ dotnet add package PcapFile.IO
 
 ```csharp
 using KimoTech.PcapFile.IO;
-using KimoTech.PcapFile.IO.Structures;
-using KimoTech.PcapFile.IO.Extensions;
 
 // 创建数据写入器
 using var writer = new PcapWriter();

@@ -1,7 +1,7 @@
 using System;
 using System.Text;
 
-namespace KimoTech.PcapFile.IO.Extensions
+namespace KimoTech.PcapFile.IO
 {
     /// <summary>
     /// 字节数组扩展方法

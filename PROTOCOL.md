@@ -206,8 +206,6 @@ PCAP文件格式基于以下核心设计理念：
 
 ```csharp
 using KimoTech.PcapFile.IO;
-using KimoTech.PcapFile.IO.Structures;
-using KimoTech.PcapFile.IO.Extensions;
 
 // 创建数据写入器
 using var writer = new PcapWriter();
@@ -265,8 +263,6 @@ PcapFile.IO库提供以下核心类用于文件操作：
 using System;
 using System.Text;
 using KimoTech.PcapFile.IO;
-using KimoTech.PcapFile.IO.Structures;
-using KimoTech.PcapFile.IO.Extensions;
 
 // 创建数据写入器
 using var writer = new PcapWriter();
@@ -302,7 +298,6 @@ NET.addAssembly('D:\path\to\KimoTech.PcapFile.IO.dll');
 
 % 引用所需的类
 import KimoTech.PcapFile.IO.*;
-import KimoTech.PcapFile.IO.Structures.*;
 import System.Text.*;
 import System.*;
 
@@ -364,7 +359,6 @@ NET.addAssembly('D:\path\to\KimoTech.PcapFile.IO.dll');
 
 % 引用所需的类
 import KimoTech.PcapFile.IO.*;
-import KimoTech.PcapFile.IO.Structures.*;
 import System.Text.*;
 import System.*;
 

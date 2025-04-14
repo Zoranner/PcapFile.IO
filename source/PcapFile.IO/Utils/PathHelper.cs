@@ -1,9 +1,8 @@
 using System;
 using System.IO;
 using System.Linq;
-using KimoTech.PcapFile.IO.Configuration;
 
-namespace KimoTech.PcapFile.IO.Utils
+namespace KimoTech.PcapFile.IO
 {
     /// <summary>
     /// 路径帮助类，提供路径相关的工具方法

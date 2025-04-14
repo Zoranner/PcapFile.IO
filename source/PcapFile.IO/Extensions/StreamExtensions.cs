@@ -3,7 +3,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace KimoTech.PcapFile.IO.Extensions
+namespace KimoTech.PcapFile.IO
 {
     /// <summary>
     /// Stream 扩展方法

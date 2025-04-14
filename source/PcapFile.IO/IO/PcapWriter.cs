@@ -1,10 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using KimoTech.PcapFile.IO.Configuration;
-using KimoTech.PcapFile.IO.Interfaces;
-using KimoTech.PcapFile.IO.Structures;
-using KimoTech.PcapFile.IO.Writers;
 
 namespace KimoTech.PcapFile.IO
 {
