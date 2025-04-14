@@ -14,12 +14,17 @@ namespace KimoTech.PcapFile.IO.Structures
         /// <summary>
         /// 数据包头大小(字节)
         /// </summary>
-        public const int HEADER_SIZE = 16; // 8 + 4 + 4
+        public const int HEADER_SIZE = 16; // 4 + 4 + 4 + 4
 
         /// <summary>
-        /// 数据包捕获时间戳(毫秒)
+        /// 数据包捕获时间戳(秒)
         /// </summary>
-        public long Timestamp { get; set; }
+        public uint TimestampSeconds { get; set; }
+
+        /// <summary>
+        /// 数据包捕获时间戳(纳秒)
+        /// </summary>
+        public uint TimestampNanoseconds { get; set; }
 
         /// <summary>
         /// 数据包长度
@@ -31,9 +36,15 @@ namespace KimoTech.PcapFile.IO.Structures
         /// </summary>
         public uint Checksum { get; set; }
 
-        private DataPacketHeader(long timestamp, uint packetLength, uint checksum)
+        private DataPacketHeader(
+            uint timestampSeconds,
+            uint timestampNanoseconds,
+            uint packetLength,
+            uint checksum
+        )
         {
-            Timestamp = timestamp;
+            TimestampSeconds = timestampSeconds;
+            TimestampNanoseconds = timestampNanoseconds;
             PacketLength = packetLength;
             Checksum = checksum;
         }
@@ -41,22 +52,51 @@ namespace KimoTech.PcapFile.IO.Structures
         /// <summary>
         /// 创建一个新的 DataPacketHeader 实例
         /// </summary>
-        /// <param name="timestamp">捕获时间戳</param>
+        /// <param name="timestampSeconds">捕获时间戳(秒)</param>
+        /// <param name="timestampNanoseconds">捕获时间戳(纳秒)</param>
         /// <param name="packetLength">数据包长度</param>
         /// <param name="checksum">校验和</param>
         /// <returns>初始化后的 DataPacketHeader 实例</returns>
-        public static DataPacketHeader Create(long timestamp, uint packetLength, uint checksum)
+        public static DataPacketHeader Create(
+            uint timestampSeconds,
+            uint timestampNanoseconds,
+            uint packetLength,
+            uint checksum
+        )
         {
-            return new DataPacketHeader(timestamp, packetLength, checksum);
+            return new DataPacketHeader(
+                timestampSeconds,
+                timestampNanoseconds,
+                packetLength,
+                checksum
+            );
+        }
+
+        /// <summary>
+        /// 创建一个新的 DataPacketHeader 实例（使用DateTime）
+        /// </summary>
+        /// <param name="captureTime">捕获时间</param>
+        /// <param name="packetLength">数据包长度</param>
+        /// <param name="checksum">校验和</param>
+        /// <returns>初始化后的 DataPacketHeader 实例</returns>
+        public static DataPacketHeader CreateFromDateTime(
+            DateTime captureTime,
+            uint packetLength,
+            uint checksum
+        )
+        {
+            uint seconds = captureTime.ToUnixTimeSeconds();
+            uint nanoseconds = captureTime.GetNanoseconds();
+            return new DataPacketHeader(seconds, nanoseconds, packetLength, checksum);
         }
 
         /// <summary>
         /// 根据捕获时间和数据包内容创建一个新的 DataPacketHeader 实例
         /// </summary>
-        /// <param name="timestamp">捕获时间戳</param>
+        /// <param name="captureTime">捕获时间</param>
         /// <param name="packetData">数据包内容</param>
         /// <returns>初始化后的 DataPacketHeader 实例</returns>
-        public static DataPacketHeader CreateFromPacket(long timestamp, byte[] packetData)
+        public static DataPacketHeader CreateFromPacket(DateTime captureTime, byte[] packetData)
         {
             if (packetData == null)
             {
@@ -65,7 +105,7 @@ namespace KimoTech.PcapFile.IO.Structures
 
             var packetLength = (uint)packetData.Length;
             var checksum = ChecksumCalculator.CalculateCrc32(packetData);
-            return Create(timestamp, packetLength, checksum);
+            return CreateFromDateTime(captureTime, packetLength, checksum);
         }
 
         /// <summary>

@@ -14,9 +14,7 @@
    - [目录结构设计](#目录结构设计)
 
 - [文件格式详解](#文件格式详解)
-   - [PCAP 工程文件格式](#pcap-工程文件格式)
    - [PCAP 数据文件格式](#pcap-数据文件格式)
-   - [索引机制说明](#索引机制说明)
 
 - [数据规范](#数据规范)
    - [时间同步要求](#时间同步要求)
@@ -24,20 +22,15 @@
    - [数据对齐规范](#数据对齐规范)
 
 - [实现指南](#实现指南)
-   - [数据读写最佳实践](#数据读写最佳实践)
-   - [索引优化策略](#索引优化策略)
+   - [数据写入最佳实践](#数据写入最佳实践)
    - [性能考量](#性能考量)
 
 - [应用场景](#应用场景)
    - [数据采集](#数据采集)
-   - [数据回放](#数据回放)
-   - [回放模式与控制](#回放模式与控制)
 
 - [开发指南](#开发指南)
    - [基础工具集](#基础工具集)
    - [数据写入示例](#数据写入示例)
-   - [数据读取示例](#数据读取示例)
-   - [MATLAB 集成](#matlab-集成)
 
 - [安全与故障处理](#安全与故障处理)
    - [数据完整性](#数据完整性)
@@ -51,23 +44,19 @@
 
 ### 概述
 
-PCAP 文件格式是为高性能数据采集和回放设计的专用格式，基于标准 PCAP 格式扩展。本协议定义了两种核心文件类型：
-- **PCAP工程文件**：管理数据文件索引和元数据，提供高效检索
-- **PCAP数据文件**：存储实际采集的数据包内容
+PCAP 文件格式是为高性能数据采集设计的专用格式，基于标准 PCAP 格式扩展。本协议定义了数据的存储格式，用于存储实际采集的数据包内容。
 
 ### 关键特性
 
-- 支持毫秒级时间精度和同步
-- 提供多级索引结构，实现快速时间定位
+- 支持纳秒级时间精度和同步
 - 支持多源异构数据统一管理
-- 优化的目录结构设计，避免多工程文件冲突
+- 优化的目录结构设计
+- 支持通过工程名称组织数据
 
 #### 基本使用流程
 
-1. **创建工程文件**：初始化PCAP工程文件，设置索引间隔参数
-2. **数据写入**：将采集数据写入PCAP数据文件，同时更新索引
-3. **数据检索**：通过时间戳快速定位和访问特定数据
-4. **数据回放**：按原始时序或自定义速率回放数据
+1. **创建数据目录**：指定基础目录和工程名称创建数据工程目录
+2. **数据写入**：将采集数据写入PCAP数据文件
 
 ### 版本历史
 
@@ -75,14 +64,18 @@ PCAP 文件格式是为高性能数据采集和回放设计的专用格式，基
 | ------ | ---------- | ---------------------------------------------------------------------------- |
 | 0.0.1  | 2023-12-26 | 初始版本                                                                     |
 | 0.0.2  | 2024-03-19 | 简化数据格式，移除 PacketDataHeader 层，允许用户直接存储任意字节数组         |
-| 0.0.3  | 2024-03-20 | 补充工程文件机制详细说明，包括索引间隔作用、时间范围索引重要性和索引生成方式 |
-| 0.0.4  | 2024-03-21 | 更新目录结构设计和文件命名规则，数据文件从固定目录改为以工程文件名命名的目录，并采用时间戳命名格式 |
+| 0.0.3  | 2024-03-20 | 补充文件格式详细说明 |
+| 0.0.4  | 2024-03-21 | 更新目录结构设计和文件命名规则，采用时间戳命名格式 |
+| 0.0.5  | 2024-04-06 | 移除工程文件格式，简化为仅使用PCAP数据文件 |
+| 0.0.6  | 2024-04-06 | 添加数据工程名称支持，用于组织数据文件 |
+| 0.0.7  | 2024-04-07 | 移除读取功能，仅保留写入功能 |
+| 0.0.8  | 2024-04-07 | 升级时间精度支持，从毫秒精度提升至纳秒精度 |
 
 ### 适用场景
 
-- **仿真系统**：复杂系统仿真过程中的数据记录和重现
-- **实时系统**：支持对实时系统运行状态的完整记录和精确重现
-- **分布式应用**：为分布式系统提供统一的数据同步和管理机制
+- **仿真系统**：复杂系统仿真过程中的数据记录
+- **实时系统**：支持对实时系统运行状态的完整记录
+- **分布式应用**：为分布式系统提供统一的数据管理机制
 - **系统调试与分析**：提供详细的系统行为记录，便于问题定位和性能优化
 
 ## 协议设计
@@ -91,7 +84,7 @@ PCAP 文件格式是为高性能数据采集和回放设计的专用格式，基
 
 PCAP文件格式基于以下核心设计理念：
 
-1. **高效数据组织**：采用分层索引结构，实现毫秒级数据定位
+1. **高效数据组织**：优化的文件结构，支持高效数据访问
 2. **灵活数据存储**：支持任意格式数据封装，适应多种应用场景
 3. **可扩展架构**：版本化设计确保协议可持续演进
 4. **跨平台兼容**：统一的数据表示确保不同系统间数据交换
@@ -99,8 +92,7 @@ PCAP文件格式基于以下核心设计理念：
 ### 主要特点
 
 - **统一数据管理**：通过标准化封装格式和接口，实现对异构数据的一致性管理
-- **精确时间同步**：支持毫秒级时间精度，确保多源数据的时序一致性
-- **高效索引机制**：多级索引结构支持大规模数据的快速检索和访问
+- **精确时间同步**：支持纳秒级时间精度，确保多源数据的时序一致性
 - **优化的存储策略**：可选的压缩和加密机制，平衡存储效率和安全性
 
 #### 设计考虑
@@ -113,7 +105,6 @@ PCAP文件格式基于以下核心设计理念：
 2. **可靠性保证**
    - 多重校验机制确保数据完整性
    - 完善的错误处理和恢复机制
-   - 支持断点续传和数据恢复
 
 3. **兼容性考虑**
    - 保持与标准PCAP格式的兼容性
@@ -124,915 +115,380 @@ PCAP文件格式基于以下核心设计理念：
 
 项目采用的目录结构组织遵循以下规则：
 
-1. PCAP 工程文件 (.proj) 放置在用户指定的位置
-2. PCAP 数据文件存放在与工程文件同级的以工程文件名（不含扩展名）命名的目录中
-3. PCAP 数据文件采用 `data_yyMMdd_HHmmss_fff.pcap` 命名格式，其中时间戳部分根据创建时间自动生成
+1. 用户需指定基础目录和数据工程名称
+2. 系统会在基础目录下创建以数据工程名称命名的子目录
+3. PCAP 数据文件存放在该工程子目录中
+4. PCAP 数据文件采用 `data_yyMMdd_HHmmss_fffffff.pcap` 命名格式，其中时间戳部分根据创建时间自动生成
 
-例如，对于名为 `project.proj` 的工程文件，其目录结构如下：
-
-![目录结构示例](drawio_files/directory_structure.drawio)
+目录结构示例：
+```
+/path/to/base-directory/
+└── project-name/                  # 数据工程目录（由工程名称指定）
+    ├── data_240321_153045_1234567.pcap  # 数据文件1
+    ├── data_240321_154012_4567890.pcap  # 数据文件2
+    └── data_240321_155130_7890123.pcap  # 数据文件3
+```
 
 这种目录结构设计有以下几个优点：
-1. 每个工程文件有独立的数据目录，避免多个工程文件共享同一个数据目录可能引起的冲突
+1. 通过工程名称组织数据，便于管理不同的数据集
 2. 通过时间戳命名的数据文件便于按时间顺序组织和查找
-3. 工程文件和数据目录的关联更加清晰，便于管理和移动
-4. 支持多个工程文件并行工作而不会相互干扰
+3. 简单直观的文件组织方式，易于管理和移动
+4. 支持多个数据工程并行工作而不会相互干扰
 
 ## 文件格式详解
 
-本协议定义了两种文件格式：PCAP 工程文件和 PCAP 数据文件。PCAP 工程文件用于管理数据文件的索引和元数据，而 PCAP 数据文件用于存储实际的数据包内容。
-
-### PCAP 工程文件格式
-
-工程文件采用标准 PCAP 格式，用于管理数据文件的索引和元数据。文件结构如下：
-
-![PCAP工程文件格式](drawio_files/pcap_project_file_format.drawio)
-
-#### 文件头部（32 字节）
-
-| 偏移量 | 长度(字节) | 名称              | 描述                             |
-| ------ | ---------- | ----------------- | -------------------------------- |
-| 0      | 4          | Magic Number      | 固定值 0xA1B2C3D4                |
-| 4      | 2          | Major Version     | 主版本号                         |
-| 6      | 2          | Minor Version     | 次版本号                         |
-| 8      | 4          | File Entry Offset | 文件条目表偏移量                 |
-| 12     | 2          | File Count        | 数据文件数量，写入数据时更新     |
-| 14     | 4          | Time Index Offset | 时间索引表偏移量，写入数据时更新 |
-| 18     | 2          | Index Interval    | 索引间隔(毫秒)                   |
-| 20     | 4          | Total Index Count | 总索引项数，写入数据时更新       |
-| 24     | 4          | Checksum          | CRC32 值，写入数据时更新         |
-| 28     | 2          | Reserved          | 保留字段                         |
-
-**索引间隔说明**：
-
-- 索引间隔参数用于控制索引的采样密度，而非要求数据必须按固定间隔写入
-- 系统会在构建索引时，按照指定的时间间隔（如 1000 毫秒）选取采样点
-- 对于每个采样时间点，系统会找到该时间点之后的第一个数据包，并为其创建索引项
-- 如果某个时间区间内没有数据，则不会创建该时间点的索引项
-- 通过调整索引间隔参数，可以在检索性能和工程文件大小之间找到平衡点
-- 较小的索引间隔提供更精确的定位能力，但会增加工程文件大小
-- 较大的索引间隔可减少工程文件大小，但可能增加定位时的线性搜索范围
-
-#### 文件条目表
-
-| 偏移量 | 长度(字节) | 名称            | 描述              |
-| ------ | ---------- | --------------- | ----------------- |
-| 0      | 4          | File ID         | 文件标识符        |
-| 4      | 2          | Path Length     | 相对路径长度      |
-| 6      | 256        | Relative Path   | 相对路径（UTF-8） |
-| 262    | 8          | Start Timestamp | 起始时间戳(毫秒)  |
-| 270    | 8          | End Timestamp   | 结束时间戳(毫秒)  |
-| 278    | 4          | Index Count     | 文件内索引项数量  |
-| 282    | 4          | Reserved        | 保留字段          |
-
-**文件条目表说明**：
-
-- 文件条目表采用固定长度记录格式，每个条目 286 字节
-- 相对路径字段使用 UTF-8 编码，支持多语言文件名
-- **重要说明**：相对路径**不包含**数据目录部分（即工程文件同名目录），仅存储数据文件名本身，如 `data_240321_110000_000.pcap`
-- 实际文件定位过程：
-  1. 系统首先获取工程文件的完整路径（如 `/path/to/project.proj`）
-  2. 根据工程文件的路径提取其所在目录（如 `/path/to/`）
-  3. 添加与工程文件同名的数据目录（如 `project/`）
-  4. 最后添加条目表中存储的相对路径（如 `data_240321_110000_000.pcap`）
-  5. 完整路径为：`/path/to/project/data_240321_110000_000.pcap`
-- 文件 ID 用于唯一标识文件，在时间范围索引表中引用
-- 时间戳字段存储数据文件的时间范围信息，便于快速筛选
-- 索引项数量字段指示该文件在索引表中的条目数
-
-#### 时间范围索引表
-
-| 偏移量 | 长度(字节) | 名称      | 描述         |
-| ------ | ---------- | --------- | ------------ |
-| 0      | 4          | File ID   | 文件标识符   |
-| 4      | 8          | Timestamp | 时间戳(毫秒) |
-
-**时间范围索引表说明**：
-
-- 时间范围索引是多文件场景下的核心检索机制，用于快速定位特定时间点的数据所在的文件
-- 作用原理：记录采样时间点与包含该时间点数据的文件 ID 之间的映射关系
-- 主要优势：
-  - 避免在多文件环境下打开每个文件查找特定时间点的数据
-  - 实现跨文件的高效时间检索，大幅降低检索延迟
-  - 支持大规模数据集的高效管理和访问
-- 检索流程：
-  - 首先在时间范围索引表中通过二分查找确定目标时间所在的文件
-  - 然后使用文件 ID 找到相应的文件条目信息
-  - 最后在目标文件的文件内索引中精确定位数据包位置
-- 构建策略：
-  - 每个索引间隔点对应时间范围索引表中的一个条目
-  - 当单个索引区间跨越多个文件时，确保每个文件的起始数据包都有对应的索引项
-  - 对于时间不连续的数据文件集合，保证时间边界处有完整的索引覆盖
-
-#### 文件内索引表
-
-| 偏移量 | 长度(字节) | 名称        | 描述                   |
-| ------ | ---------- | ----------- | ---------------------- |
-| 0      | 8          | Timestamp   | 时间戳(毫秒)           |
-| 8      | 8          | File Offset | 数据包在文件中的偏移量 |
-
-**文件内索引表说明**：
-
-- 文件内索引表是连续存储在工程文件中的，每个文件的索引表按顺序排列
-- 索引表偏移量用于快速定位每个文件的索引表在工程文件中的具体位置
-- 由于每个索引项大小固定（16 字节），索引表偏移量可以通过计算得到：
-  ```csharp
-  // 计算文件N的索引表偏移量
-  long offset = 文件头部大小 + 文件条目表大小 + 时间范围索引表大小 +
-                (文件1的IndexCount + 文件2的IndexCount + ... + 文件N-1的IndexCount) * 16
-  ```
-- 这种设计允许系统快速访问任意文件的索引表，无需遍历前面的文件
-- 索引表偏移量在文件条目表中存储，便于系统快速定位和访问
+本协议定义了PCAP 数据文件，用于存储实际的数据包内容。
 
 ### PCAP 数据文件格式
 
-PCAP 数据文件采用简单清晰的结构设计，文件由文件头和多个数据包组成，每个数据包包含包头和数据内容两部分。
+数据文件采用标准 PCAP 格式的扩展，用于存储实际的数据内容。
 
-![PCAP数据文件格式](drawio_files/pata_data_file_format.drawio)
+#### 文件头部（16 字节）
 
-#### 命名规范
+| 偏移量 | 长度(字节) | 名称                | 描述                         |
+| ------ | ---------- | ------------------- | ---------------------------- |
+| 0      | 4          | Magic Number        | 固定值 0xD4C3B2A1            |
+| 4      | 2          | Major Version       | 主版本号，当前为 0x0002      |
+| 6      | 2          | Minor Version       | 次版本号，当前为 0x0004      |
+| 8      | 4          | Timezone Offset     | 时区偏移量，通常为 0         |
+| 12     | 4          | Timestamp Accuracy  | 时间戳精度，固定为 0         |
 
-数据文件采用以下命名格式：
-```
-data_yyMMdd_HHmmss_fff.pcap
-```
+#### 数据包（可变长度）
 
-其中：
-- `yy`: 年份，2位数字（如：24表示2024年）
-- `MM`: 月份，2位数字（如：03表示3月）
-- `dd`: 日期，2位数字（如：21表示21日）
-- `HH`: 小时，2位数字，24小时制（如：15表示下午3点）
-- `mm`: 分钟，2位数字
-- `ss`: 秒，2位数字
-- `fff`: 毫秒，3位数字
+每个数据包由一个头部和实际数据组成：
 
-例如：`data_240321_110000_000.pcap`表示2024年3月21日11点00分00秒000毫秒创建的数据文件。
+##### 数据包头部（16 字节）
 
-#### 文件结构
+| 偏移量 | 长度(字节) | 名称                  | 描述                       |
+| ------ | ---------- | --------------------- | -------------------------- |
+| 0      | 4          | Timestamp Seconds     | 时间戳秒部分 (UTC)         |
+| 4      | 4          | Timestamp Nanoseconds | 时间戳纳秒部分 (UTC)       |
+| 8      | 4          | Packet Length         | 数据包长度（字节）         |
+| 12     | 4          | Checksum              | 数据包校验和（CRC32）      |
 
-##### 文件头格式 (PCAP File Header)
+##### 数据包数据（可变长度）
 
-文件头用于标识文件格式和版本信息，同时提供基本的时间同步参数。文件头采用固定长度设计，确保解析效率。
-
-文件头总长度：16 字节
-
-| 偏移量 | 长度(字节) | 名称               | 描述                                             |
-| ------ | ---------- | ------------------ | ------------------------------------------------ |
-| 0      | 4          | Magic Number       | 标识文件格式的魔术数，固定值 0x50415441 ("PCAP") |
-| 4      | 2          | Major Version      | 主版本号 (当前为 1)                              |
-| 6      | 2          | Minor Version      | 次版本号 (当前为 0)                              |
-| 8      | 4          | Timezone           | 时区偏移量 (GMT)                                 |
-| 12     | 4          | Timestamp Accuracy | 时间戳精度 (毫秒)                                |
-
-**文件头说明**：
-
-- Magic Number 用于快速识别文件格式
-- 版本号支持协议升级和向后兼容
-- 时区偏移量用于时间戳的本地化处理
-- 时间戳精度定义了时间戳的最小单位
-
-##### 数据包头格式 (Packet Header)
-
-数据包头为每个数据包提供时间戳和长度信息，同时引入校验机制确保数据完整性。
-
-每个数据包前的包头长度：16 字节
-
-| 偏移量 | 长度(字节) | 名称          | 描述                           |
-| ------ | ---------- | ------------- | ------------------------------ |
-| 0      | 8          | Timestamp     | 数据包捕获时间戳（毫秒）       |
-| 8      | 4          | Packet Length | 数据包长度                     |
-| 12     | 4          | Checksum      | 数据包校验和（包含包头和数据） |
-
-**数据包头说明**：
-
-- 时间戳采用 UTC 时间，精确到毫秒
-- 数据包长度字段用于快速定位下一个数据包
-- 校验和采用 CRC32 算法，确保数据完整性
-- 包头采用固定长度设计，便于解析和定位
-
-##### 数据包内容 (Packet Data)
-
-数据包内容部分采用灵活的设计，允许存储任意格式的字节数组。这种设计具有以下优势：
-
-1. 格式灵活性
-
-   - 支持任意类型的数据格式
-   - 无需额外的格式转换
-   - 便于集成现有系统
-
-2. 性能优化
-
-   - 直接存储原始数据
-   - 减少数据转换开销
-   - 支持高效的数据传输
-
-3. 应用场景
-
-   - 日志数据：JSON、XML、文本等
-   - 二进制数据：图像、音频、视频等
-   - 结构化数据：协议消息、配置信息等
-   - 自定义格式：特定应用的数据格式
-
-4. 数据组织建议
-   - 建议在数据包内容中包含数据类型标识
-   - 可以使用标准序列化格式（如 Protocol Buffers）
-   - 支持数据压缩和加密
-   - 提供数据版本控制机制
+紧随数据包头部之后，存储实际的数据内容。数据长度由数据包头部中的 `Packet Length` 字段指定。
 
 ## 数据规范
 
-数据规范是确保系统数据一致性和可靠性的基础。本章节详细规定了时间同步和数据格式等关键规范要求。所有接入系统的数据必须严格遵循这些规范，以保证数据的互操作性和可用性。
-
 ### 时间同步要求
 
-为确保系统范围内的时间一致性，时间同步机制需要满足以下具体要求:
-
-1. **时间基准**
-   - 采用 UTC 时间作为统一基准
-   - 支持 GPS/北斗等外部时间源
-
-2. **时间戳格式**
-   - 分辨率：毫秒级精度
-   - 格式：64 位整数，单位为毫秒
-   - 基准时间：UTC 时间
+- 所有数据包必须包含纳秒级精度的时间戳
+- 时间戳采用 UTC 时间，避免时区问题
+- 多源数据采集时，必须确保时间同步
 
 ### 数据格式要求
 
-数据格式标准化确保了不同来源数据的一致处理。主要规范如下：
-
-1. **数值类型**
-   - 整型：支持 8/16/32/64 位
-   - 浮点：支持单精度和双精度
-   - 定点：支持 Q 格式定点数
-
-2. **整型数据要求**
-   - 有符号整型采用补码表示
-   - 跨平台传输时统一采用网络字节序
-   - 明确定义溢出处理策略
-   - 提供数值范围检查机制
-
-3. **浮点数据要求**
-   - 严格遵循 IEEE754 标准
-   - 明确定义 NaN 和 Infinity 的处理方式
-   - 提供精度损失检测机制
-   - 实现浮点数比较容差处理
-
-4. **定点数据要求**
-   - 明确定义小数位数和比例因子
-   - 提供定点数运算库
-   - 实现溢出保护机制
-   - 支持定点数格式转换
+- 支持任意格式的二进制数据
+- 单个数据包大小限制为 10MB 以内
+- 文件命名必须遵循 `data_yyMMdd_HHmmss_fffffff.pcap` 格式
+- 工程目录使用指定的工程名称创建
 
 ### 数据对齐规范
 
-数据在内存或存储中的对齐方式对性能和兼容性有重要影响：
-
-1. **结构体对齐**
-   - 结构体成员按自然边界对齐
-   - 1 字节数据类型：任意地址
-   - 2 字节数据类型：2 字节边界对齐
-   - 4 字节数据类型：4 字节边界对齐
-   - 8 字节数据类型：8 字节边界对齐
-   - 填充字节使用 0x00
-   - 保证跨平台数据一致性
-
-2. **打包规则**
-   - 提供强制 1 字节对齐选项
-   - 明确定义跨平台打包规则
-   - 支持结构体版本控制
-   - 实现向前和向后兼容
+- 所有多字节字段采用小端字节序（Little-Endian）
+- 数据结构应按 4 字节对齐，提高访问效率
+- 保留字段必须初始化为零值
 
 ## 实现指南
 
-本章提供了实现 PCAP/PATA 文件格式时的最佳实践和优化建议，旨在帮助开发者构建高性能、稳定可靠的系统。
+### 数据写入最佳实践
 
-### 数据读写最佳实践
+- 使用 `PcapWriter` 类创建和写入 PCAP 文件
+- 通过 `Create` 方法指定基础目录和工程名称
+- 使用 `WritePacket` 或 `WritePackets` 方法写入数据
+- 定期调用 `Flush` 方法将缓冲数据写入磁盘
+- 使用 `Close` 方法关闭文件
+- 使用 `using` 语句确保资源正确释放
 
-#### 数据写入最佳实践
-
-1. **缓冲策略**
-   - 采用双缓冲或环形缓冲区设计
-   - 实时数据优先写入内存缓冲区，定期刷新到磁盘
-   - 缓冲区大小建议：根据数据速率调整，通常为数据10秒流量
-
-2. **批量写入**
-   - 合并小数据包为批量写入操作
-   - 避免频繁IO操作，降低系统开销
-   - 推荐批量大小：1-10MB或1000-10000个数据包
-
-3. **索引管理**
-   - 使用内存索引缓存，定期更新工程文件
-   - 索引间隔建议：对时间敏感应用使用100-500ms，一般应用使用1000ms
-   - 避免过密索引导致文件膨胀
-
-#### 数据读取最佳实践
-
-1. **预读取策略**
-   - 实现数据预读取机制，提前加载可能需要的数据
-   - 根据访问模式动态调整预读取窗口大小
-   - 常见预读取窗口：顺序读取时5-10秒数据量
-
-2. **缓存机制**
-   - 实现多级缓存架构，降低重复读取开销
-   - 索引缓存：保留常用时间范围的索引数据
-   - 数据缓存：缓存最近访问的数据包
-
-3. **并行读取**
-   - 利用多线程并行读取不同数据文件
-   - 实现异步读取接口，避免IO等待阻塞处理流程
-   - 读取线程数建议：不超过可用CPU核心数
-
-### 索引优化策略
-
-1. **分层索引设计**
-   - 文件级索引：快速定位目标文件
-   - 块级索引：在文件内快速定位数据区块
-   - 记录级索引：精确定位单个数据包
-
-### 性能考量
-
-1. **IO优化**
-   - 使用直接IO避免双重缓冲
-   - 对大文件采用内存映射技术
-   - 文件读写操作与数据处理解耦
-
-2. **内存管理**
-   - 实现对象池模式，减少GC压力
-   - 使用堆外内存处理大数据
-   - 避免频繁内存分配释放
-
-3. **并发控制**
-   - 读写锁分离，允许多读单写
-   - 粒度锁设计，最小化锁竞争
-   - 无锁数据结构提高并发性能
-
-## 应用场景
-
-本协议设计适用于多种应用场景，本章节详细介绍主要的应用模式和具体实现方法。
-
-### 数据采集
-
-数据采集是本协议的核心应用场景之一，分为实时采集和离线导入两种主要模式。
-
-#### 实时采集流程
-
-![数据采集流程](drawio_files/data_collection_flow.drawio)
-
-#### 关键实现要点
-
-1. **高速数据流处理**
-   - 零拷贝技术：减少内存复制开销
-   - 批量处理：合并多个数据包操作
-   - 异步写入：数据采集与存储操作并行
-
-2. **数据预处理**
-   - 数据格式标准化：统一不同来源数据格式
-   - 数据质量检验：过滤无效或冗余数据
-   - 实时压缩：降低存储空间需求
-
-3. **容错与恢复**
-   - 断点续传：支持中断后继续写入
-   - 缓存持久化：定期保存中间状态
-   - 故障检测：自动发现并处理写入错误
-
-### 数据回放
-
-数据回放提供对已采集数据的精确重放，支持多种回放模式，适应不同应用需求。
-
-#### 回放架构
-
-![数据回放架构](drawio_files/data_playback_architecture.drawio)
-
-### 回放模式与控制
-
-#### 回放模式
-
-1. **实时回放模式**
-   - 按原始时间间隔精确回放数据
-   - 支持1:1时间比例回放
-   - 适用于仿真和系统验证场景
-
-2. **变速回放模式**
-   - 支持0.1x-100x可调速率
-   - 保持数据包相对时间间隔
-   - 适用于快速分析或慢速检查场景
-
-3. **步进回放模式**
-   - 按数据包单步回放
-   - 支持前向和后向步进
-   - 适用于调试和详细分析场景
-
-4. **循环回放模式**
-   - 在指定时间范围内循环回放
-   - 支持无限循环或指定循环次数
-   - 适用于持续测试和演示场景
-
-#### 回放控制参数
-
-| 参数名 | 类型 | 描述 | 取值范围 |
-|-------|------|------|---------|
-| Mode | enum | 回放模式 | RealTime, SpeedAdjusted, StepByStep, Loop |
-| Speed | float | 回放速率 | 0.1-100.0，默认1.0 |
-| StartTime | DateTime | 回放起始时间 | 有效时间戳，默认文件起始时间 |
-| EndTime | DateTime | 回放结束时间 | 有效时间戳，默认文件结束时间 |
-| LoopCount | int | 循环次数 | 0表示无限循环，默认1 |
-| TimeAccuracy | enum | 时间精度要求 | High(±1ms), Normal(±10ms), Low(±100ms) |
-
-#### 回放同步机制
-
-1. **时间同步**
-   - 内部时钟同步：确保多源数据时间一致性
-   - 外部时钟同步：与系统时钟或外部参考源同步
-   - 分布式同步：支持多节点同步回放
-
-2. **事件触发**
-   - 条件触发：满足特定条件时触发下一步回放
-   - 外部触发：响应外部信号控制回放流程
-   - 数据触发：根据数据内容决定回放行为
-
-## 开发指南
-
-本章节提供具体的开发指南，帮助开发者快速集成和使用 PCAP/PATA 文件格式。
-
-### 基础工具集
-
-PCAP文件格式核心支持包括：
-
-**PcapFile.IO 库**
-- 跨平台核心库，实现协议的基础读写功能
-- 支持 .NET Standard 2.0 以上平台
-- 包含完整的数据结构定义和底层IO操作
-
-### 数据写入示例
-
-以下示例展示了如何创建PCAP文件并写入数据：
+#### 数据写入代码示例
 
 ```csharp
-using System;
 using KimoTech.PcapFile.IO;
 using KimoTech.PcapFile.IO.Structures;
 using KimoTech.PcapFile.IO.Extensions;
 
-// 创建一个新的PCAP文件
+// 创建数据写入器
 using var writer = new PcapWriter();
-writer.Create("example.proj");
+
+// 创建新数据工程目录 - 数据将存储在 "/path/to/data/my_project" 目录中
+writer.Create("/path/to/data", "my_project");
 
 // 创建数据包
-var packetData = new byte[] { 0x01, 0x02, 0x03, 0x04 };
-// 使用时间戳而不是DateTime
-var timestamp = DateTime.UtcNow.ToUnixTimeMilliseconds();
-var packet = new DataPacket(timestamp, packetData);
+var data = new byte[] { 0x01, 0x02, 0x03, 0x04 };
+// 直接使用DateTime对象创建数据包，内部会自动转换为秒和纳秒部分
+var packet = new DataPacket(DateTime.Now, data);
 
 // 写入数据包
 writer.WritePacket(packet);
-
-// 批量写入多个数据包
-var packets = new List<DataPacket>();
-for (int i = 0; i < 10; i++)
-{
-    var data = new byte[] { (byte)i, 0x10, 0x20, 0x30 };
-    // 使用时间戳而不是DateTime
-    var ts = DateTime.UtcNow.AddMilliseconds(i * 100).ToUnixTimeMilliseconds();
-    packets.Add(new DataPacket(ts, data));
-}
-writer.WritePackets(packets);
-
-// 刷新缓冲区确保数据写入磁盘
-writer.Flush();
 
 // 关闭文件
 writer.Close();
 ```
 
-### 数据读取示例
+### 性能考量
 
-以下示例展示了如何读取PCAP文件中的数据：
+- 通过批量写入减少IO开销
+- 合理设置缓冲区大小，平衡内存使用和IO效率
+- 当写入大量数据时，定期调用 `Flush` 方法
+- 当写入频率较高时，可将 `AutoFlush` 设置为 `false`
+- 合理控制数据包大小，避免过大的数据包
+- 预先分配数据缓冲区，减少内存分配开销
+
+## 应用场景
+
+### 数据采集
+
+PCAP文件格式特别适合以下数据采集场景：
+
+1. **实时数据采集**：工业控制系统、物联网设备等实时数据的采集
+2. **多源数据采集**：多个传感器、多路数据通道的统一采集
+3. **高频数据采集**：高频采样数据的记录存储
+4. **长时间数据采集**：支持长时间连续数据采集，自动分割文件
+
+## 开发指南
+
+### 基础工具集
+
+PcapFile.IO库提供以下核心类用于文件操作：
+
+- **PcapWriter**：PCAP文件写入器
+- **DataPacket**：数据包类，包含时间戳和数据内容
+- **DataPacketHeader**：数据包头部结构
+
+### 数据写入示例
+
+以下是一个完整的数据写入示例：
 
 ```csharp
 using System;
+using System.Text;
 using KimoTech.PcapFile.IO;
+using KimoTech.PcapFile.IO.Structures;
+using KimoTech.PcapFile.IO.Extensions;
 
-// 打开现有PCAP文件
-using var reader = new PcapReader();
-reader.Open("example.proj");
+// 创建数据写入器
+using var writer = new PcapWriter();
 
-// 显示文件信息
-Console.WriteLine($"文件包含 {reader.PacketCount} 个数据包");
-Console.WriteLine($"时间范围: {reader.StartTime} - {reader.EndTime}");
+// 创建新数据工程目录
+writer.Create("data", "test_project");
 
-// 流式读取所有数据包
-reader.Reset(); // 确保从头开始读取
-DataPacket packet;
-while ((packet = reader.ReadNextPacket()).Header.PacketLength > 0)
+// 创建并写入单个数据包 - 使用DateTime直接创建数据包
+var data = Encoding.UTF8.GetBytes("Hello, PCAP!");
+var packet = new DataPacket(DateTime.Now, data);
+writer.WritePacket(packet);
+
+// 批量写入多个数据包
+for (int i = 0; i < 10; i++)
 {
-    Console.WriteLine($"时间戳: {packet.Header.Timestamp}");
-    Console.WriteLine($"数据大小: {packet.Header.PacketLength} 字节");
-    // 处理数据...
+    var time = DateTime.Now.AddMilliseconds(i * 100);
+    var packetData = Encoding.UTF8.GetBytes($"数据包 #{i}");
+    writer.WritePacket(new DataPacket(time, packetData));
 }
 
-// 定位到特定时间
-var targetTime = new DateTime(2024, 3, 21, 15, 30, 0);
-if (reader.SeekToTime(targetTime))
-{
-    // 读取定位后的数据包
-    var timePacket = reader.ReadNextPacket();
-    Console.WriteLine($"找到时间点附近的数据包: {timePacket.Header.Timestamp}");
-}
-
-// 异步读取示例
-async Task ReadDataAsync()
-{
-    // 跳转到开始位置
-    reader.Reset();
-
-    // 异步读取数据包
-    var cancellationTokenSource = new CancellationTokenSource();
-    var token = cancellationTokenSource.Token;
-
-    var nextPacket = await reader.ReadNextPacketAsync(token);
-    while (nextPacket.Header.PacketLength > 0)
-    {
-        // 处理数据包...
-        nextPacket = await reader.ReadNextPacketAsync(token);
-    }
-}
+// 刷新缓冲区并关闭文件
+writer.Flush();
+writer.Close();
 ```
 
-### MATLAB 集成
+#### MATLAB数据写入示例
 
-PcapFile.IO 库可以与 MATLAB 集成，使 MATLAB 用户能够方便地读写 PCAP 数据文件。
-
-#### 环境准备
-
-要在 MATLAB 中使用 PcapFile.IO 库，需要满足以下要求：
-
-1. MATLAB R2018b 或更高版本（推荐 R2020b+）
-2. .NET Framework 4.7+ 或 .NET Core 3.1+/.NET 6.0+/.NET 8.0+（取决于 PcapFile.IO 的目标框架）
-3. 已编译的 PcapFile.IO.dll 文件
-
-#### 基础配置
-
-首先需要在 MATLAB 中加载 PcapFile.IO 程序集：
+MATLAB用户可以通过.NET Assembly调用PcapFile.IO库，下面是MATLAB中使用PcapFile.IO的示例：
 
 ```matlab
-% 加载 PcapFile.IO 程序集
-assembly = NET.addAssembly('path/to/PcapFile.IO.dll');
+% 加载PcapFile.IO程序集
+NET.addAssembly('D:\path\to\KimoTech.PcapFile.IO.dll');
 
-% 导入所需的命名空间
+% 引用所需的类
 import KimoTech.PcapFile.IO.*;
 import KimoTech.PcapFile.IO.Structures.*;
+import System.Text.*;
+import System.*;
+
+% 创建数据写入器
+writer = PcapWriter();
+
+% 创建新数据工程目录
+writer.Create('data', 'matlab_project');
+
+% 创建单个数据包并写入 - 使用MATLAB的当前时间
+message = 'Hello from MATLAB!';
+data = uint8(Encoding.UTF8.GetBytes(message));
+% 使用 .NET DateTime 获取当前时间
+currentTime = DateTime.Now;
+packet = DataPacket(currentTime, data);
+writer.WritePacket(packet);
+
+% 批量写入模拟数据
+for i = 1:100
+    % 创建模拟传感器数据
+    sensorData = single([i, sin(i/10), cos(i/10), i^2/100]);
+    
+    % 将MATLAB数组转换为字节数组
+    bytes = typecast(sensorData, 'uint8');
+    
+    % 创建时间戳（每100毫秒一个样本）
+    timeStamp = DateTime.Now.AddMilliseconds(i * 100);
+    
+    % 创建数据包并写入
+    writer.WritePacket(DataPacket(timeStamp, bytes));
+end
+
+% 写入MATLAB矩阵数据
+matrix = rand(10, 5);
+matrixBytes = typecast(single(matrix(:)), 'uint8');
+writer.WritePacket(DataPacket(DateTime.Now, matrixBytes));
+
+% 向文件中添加元数据（作为特殊格式的数据包）
+metadata = struct('SampleRate', 10, 'SensorType', 'Accelerometer', 'Units', 'm/s^2');
+metadataJson = jsonencode(metadata);
+metadataBytes = uint8(Encoding.UTF8.GetBytes(metadataJson));
+writer.WritePacket(DataPacket(DateTime.Now, metadataBytes));
+
+% 刷新缓冲区并关闭文件
+writer.Flush();
+writer.Close();
+writer.Dispose();
+
+disp('数据已成功写入PCAP文件！');
 ```
 
-#### 类型转换说明
+##### 使用MATLAB时间戳（秒+纳秒）
 
-MATLAB 与 .NET 之间的数据类型转换需要注意以下几点：
-
-| .NET 类型    | MATLAB 类型        | 转换方法                        |
-|--------------|--------------------|---------------------------------|
-| byte[]       | uint8 数组         | `uint8(byteArray)`              |
-| DateTime     | datetime           | `datetime(char(dateTime),'Format','yyyy-MM-dd HH:mm:ss.SSS')` |
-| List<T>      | cell 数组          | 需要逐个元素转换                |
-| string       | char 数组          | `char(string)`                  |
-9
-
-#### 读取 PCAP 文件示例
+MATLAB用户还可以使用自己的时间戳（秒+纳秒）来创建数据包：
 
 ```matlab
-% 导入名字空间
+% 加载PcapFile.IO程序集
+NET.addAssembly('D:\path\to\KimoTech.PcapFile.IO.dll');
+
+% 引用所需的类
 import KimoTech.PcapFile.IO.*;
+import KimoTech.PcapFile.IO.Structures.*;
+import System.Text.*;
+import System.*;
 
-% 创建 PcapReader 实例
-reader = PcapReader();
+% 创建数据写入器
+writer = PcapWriter();
 
-% 打开 PCAP 文件
-filePath = 'D:/data/project.proj';
-success = reader.Open(filePath);
+% 创建新数据工程目录
+writer.Create('data', 'matlab_timestamp_project');
 
-if success
-    % 显示文件信息
-    fprintf('数据包数量: %d\n', reader.PacketCount);
-    startTime = char(reader.StartTime);
-    endTime = char(reader.EndTime);
-    fprintf('时间范围: %s 到 %s\n', startTime, endTime);
+% 获取当前MATLAB时间并转换为秒和纳秒
+current = posixtime(datetime('now', 'TimeZone', 'UTC')); % 获取UTC POSIX时间（秒）
+secondsPart = uint32(floor(current)); % 整数秒部分（转换为uint32）
+nanosecondsPart = uint32((current - floor(current)) * 1e9); % 纳秒部分（转换为uint32）
 
-    % 读取所有数据包并存储到 MATLAB 数组中
-    packets = {};
-    timestamps = [];
-    dataArray = {};
+% 创建示例数据
+sensorData = single([1.1, 2.2, 3.3, 4.4]);
+dataBytes = typecast(sensorData, 'uint8');
 
-    % 确保从头开始读取
-    reader.Reset();
+% 使用秒和纳秒直接构造DataPacket
+packet = DataPacket(secondsPart, nanosecondsPart, dataBytes);
+writer.WritePacket(packet);
 
-    % 逐个读取数据包
-    i = 1;
-    while true
-        packet = reader.ReadNextPacket();
-        if isempty(packet)
-            break;
-        end
-
-        % 获取时间戳（转换为 MATLAB datetime 类型）
-        timestamps(i) = datetime(char(packet.CaptureTime), ...
-                                'Format', 'yyyy-MM-dd HH:mm:ss.SSS');
-
-        % 获取数据包内容（转换为 MATLAB uint8 数组）
-        data = uint8(packet.Data);
-        dataArray{i} = data;
-
-        % 将整个数据包对象存储在 cell 数组中（可选）
-        packets{i} = packet;
-
-        i = i + 1;
+% 批量写入带有时间戳的数据
+for i = 1:10
+    % 模拟每100毫秒一个样本的数据
+    timestampSec = secondsPart;
+    timestampNsec = nanosecondsPart + uint32(i * 100000000); % 增加100毫秒（100000000纳秒）
+    
+    % 处理纳秒溢出情况
+    if timestampNsec >= 1000000000
+        timestampSec = timestampSec + uint32(floor(double(timestampNsec) / 1000000000));
+        timestampNsec = mod(timestampNsec, 1000000000);
     end
-
-    % 显示读取结果
-    fprintf('共读取了 %d 个数据包\n', length(timestamps));
-
-    % 关闭文件
-    reader.Close();
-else
-    fprintf('无法打开文件: %s\n', filePath);
+    
+    % 创建样本数据
+    sample = single([i, sin(i/10), cos(i/10)]);
+    sampleBytes = typecast(sample, 'uint8');
+    
+    % 使用秒和纳秒构造DataPacket
+    packet = DataPacket(timestampSec, timestampNsec, sampleBytes);
+    writer.WritePacket(packet);
 end
-```
 
-### 常见问题与解决方案
-
-#### 1. 内存管理
-
-MATLAB 与 .NET 对象交互时，会涉及到内存管理问题。由于 .NET 对象被 MATLAB 管理，且采用引用计数机制，因此应注意以下几点：
-
-- 显式关闭文件：使用 `reader.Close()` 或 `writer.Close()` 确保资源释放
-- 清理变量：使用 `clear reader` 或 `clear writer` 确保 .NET 对象被及时垃圾回收
-- 对于大文件处理，考虑分批读取而不是一次性加载所有数据
-
-#### 2. 类型转换错误
-
-常见的类型转换错误及解决方法：
-
-- **DateTime 转换错误**：使用 `char()` 函数将 .NET DateTime 对象转换为字符串，再使用 MATLAB 的 `datetime` 函数进行解析
-- **字节数组转换**：使用 `uint8()` 函数将 .NET byte[] 转换为 MATLAB uint8 数组
-- **从 MATLAB 到 .NET 的数组转换**：使用 `NET.convertArray` 函数
-
-#### 3. 性能优化
-
-MATLAB 与 .NET 交互可能会有性能开销，可以通过以下方式优化：
-
-- 批量读取：使用 `ReadPackets(count)` 一次读取多个数据包，减少交互次数
-- 预分配：在 MATLAB 中预分配数组大小，避免动态扩展
-- 并行处理：对于数据处理部分，利用 MATLAB 的并行计算工具箱加速
-
-### 完整示例应用
-
-以下是一个完整的 MATLAB 函数示例，用于读取 PCAP 文件并进行可视化分析：
-
-```matlab
-function analyzeDataFile(filePath)
-    % analyzeDataFile - 读取PCAP文件并进行可视化分析
-    %
-    % 语法:
-    %   analyzeDataFile(filePath)
-    %
-    % 输入:
-    %   filePath - PCAP文件路径
-    %
-    % 示例:
-    %   analyzeDataFile('D:/data/project.proj');
-
-    % 导入名字空间
-    import KimoTech.PcapFile.IO.*;
-
-    try
-        % 加载程序集 (如果尚未加载)
-        try
-            assembly = NET.addAssembly('path/to/PcapFile.IO.dll');
-        catch
-            % 可能已经加载，忽略错误
-        end
-
-        % 创建 PcapReader 实例
-        reader = PcapReader();
-
-        % 打开 PCAP 文件
-        success = reader.Open(filePath);
-        if ~success
-            error('无法打开文件: %s', filePath);
-        end
-
-        % 显示文件信息
-        fprintf('数据包数量: %d\n', reader.PacketCount);
-        fprintf('时间范围: %s 到 %s\n', ...
-                char(reader.StartTime), char(reader.EndTime));
-
-        % 读取数据
-        reader.Reset();
-        timestamps = [];
-        packetSizes = [];
-
-        % 创建进度条
-        fprintf('正在读取数据包...\n');
-        totalPackets = reader.PacketCount;
-
-        % 读取所有数据包
-        packetIndex = 1;
-        while true
-            packet = reader.ReadNextPacket();
-            if isempty(packet)
-                break;
-            end
-
-            % 获取时间戳
-            try
-                ts = datetime(char(packet.CaptureTime), ...
-                              'Format', 'yyyy-MM-dd HH:mm:ss.SSS');
-                timestamps(packetIndex) = ts;
-
-                % 获取数据包大小
-                packetSizes(packetIndex) = packet.PacketLength;
-
-                packetIndex = packetIndex + 1;
-
-                % 显示进度 (每10%更新一次)
-                if mod(packetIndex, max(floor(totalPackets/10), 1)) == 0
-                    fprintf('已处理: %d/%d (%.1f%%)\n', ...
-                            packetIndex, totalPackets, ...
-                            packetIndex/totalPackets*100);
-                end
-            catch ME
-                fprintf('警告: 处理数据包 #%d 时出错: %s\n', ...
-                        packetIndex, ME.message);
-            end
-        end
-
-        % 分析和可视化
-        fprintf('读取完成，开始分析...\n');
-
-        % 创建图形
-        figure('Name', '数据包分析', 'Position', [100, 100, 1000, 800]);
-
-        % 子图1: 数据包时间分布
-        subplot(2, 2, 1);
-        histogram(timestamps, min(length(timestamps)/10, 50));
-        title('数据包时间分布');
-        xlabel('时间');
-        ylabel('数据包数量');
-        grid on;
-
-        % 子图2: 数据包大小随时间变化
-        subplot(2, 2, 2);
-        plot(timestamps, packetSizes, '.-');
-        title('数据包大小随时间变化');
-        xlabel('时间');
-        ylabel('数据包大小 (字节)');
-        grid on;
-
-        % 子图3: 数据包大小分布
-        subplot(2, 2, 3);
-        histogram(packetSizes, min(length(packetSizes)/10, 50));
-        title('数据包大小分布');
-        xlabel('数据包大小 (字节)');
-        ylabel('数据包数量');
-        grid on;
-
-        % 子图4: 累积数据量
-        subplot(2, 2, 4);
-        cumSizes = cumsum(packetSizes);
-        plot(timestamps, cumSizes / 1024 / 1024, '.-');
-        title('累积数据量');
-        xlabel('时间');
-        ylabel('累积数据量 (MB)');
-        grid on;
-
-        % 显示统计信息
-        fprintf('\n数据统计信息:\n');
-        fprintf('  - 总数据包数: %d\n', length(packetSizes));
-        fprintf('  - 平均数据包大小: %.2f 字节\n', mean(packetSizes));
-        fprintf('  - 最大数据包大小: %d 字节\n', max(packetSizes));
-        fprintf('  - 最小数据包大小: %d 字节\n', min(packetSizes));
-        fprintf('  - 数据总量: %.2f MB\n', sum(packetSizes) / 1024 / 1024);
-
-        % 关闭文件
-        reader.Close();
-        fprintf('分析完成\n');
-
-    catch ME
-        fprintf('错误: %s\n', ME.message);
-        fprintf('堆栈信息:\n');
-        disp(ME.stack);
-
-        % 确保关闭文件
-        if exist('reader', 'var') && ~isempty(reader)
-            try
-                reader.Close();
-            catch
-                % 忽略关闭错误
-            end
-        end
-    end
+% 使用MATLAB的高精度计时器记录时间戳
+tic;
+for i = 1:5
+    % 每次使用当前经过的时间创建时间戳
+    elapsedTime = toc;
+    timestampSec = uint32(secondsPart + floor(elapsedTime));
+    timestampNsec = uint32(((elapsedTime - floor(elapsedTime)) * 1e9));
+    
+    % 记录数据
+    data = uint8(Encoding.UTF8.GetBytes(['Sample #', num2str(i)]));
+    packet = DataPacket(timestampSec, timestampNsec, data);
+    writer.WritePacket(packet);
+    
+    % 暂停一小段时间
+    pause(0.5);
 end
+
+% 关闭文件
+writer.Flush();
+writer.Close();
+writer.Dispose();
+
+disp('使用MATLAB时间戳的数据已成功写入PCAP文件！');
 ```
 
-使用示例：
+使用上述示例代码时的注意事项：
 
-```matlab
-% 分析PCAP文件
-analyzeDataFile('D:/data/project.proj');
-```
-
-通过以上方法，用户可以充分利用 MATLAB 强大的数据分析和可视化功能，对 PCAP 文件中的数据进行深入分析和处理。
+1. 确保已正确设置PcapFile.IO.dll的路径
+2. MATLAB中的数值数组需转换为字节数组才能写入
+3. 调用结束后显式调用Dispose()方法释放资源
+4. 可以使用typecast函数在MATLAB数据类型和字节数组间转换
+5. 使用jsonencode函数可以将结构体序列化为JSON格式存储
+6. 使用posixtime函数可以获取标准的UTC POSIX时间戳
+7. 当使用秒+纳秒方式构造DataPacket时，需确保纳秒部分不超过10亿（1秒）
 
 ## 安全与故障处理
 
 ### 数据完整性
 
-数据完整性是确保数据可靠性的基础。本协议采用 CRC32 校验机制来保证数据包的完整性：
-
-1. **校验范围**
-   - 数据包头（16 字节）
-   - 数据包内容（变长）
-
-2. **校验计算**
-   - 采用标准 CRC32 算法
-   - 校验值存储在包头中
-   - 读取时自动验证
-
-3. **错误处理**
-   - 校验失败时抛出异常
-   - 支持跳过损坏的数据包
-   - 提供错误日志记录
+- 每个数据包都包含CRC32校验和
+- 写入数据时自动计算并存储校验和
+- 文件结构设计支持在部分损坏情况下恢复数据
+- 定期调用 `Flush` 方法确保数据写入磁盘，防止系统崩溃导致数据丢失
 
 ## 常见问题解答
 
 ### 文件组织与路径
 
-**问：数据目录必须与工程文件同名吗？**
+**Q: 如何管理大量数据文件？**
 
-答：是的，按设计，PCAP数据文件应存放在与PROJ工程文件同名的目录中。例如，`project.proj`的数据目录应为`project/`。这种设计确保了工程文件与其数据文件之间清晰的关联关系。
+A: 使用数据工程名称将文件组织在不同的目录中，同时可以根据时间或数据类型创建不同的工程目录。
 
-**问：工程文件中的相对路径是如何定义的？**
+**Q: 文件路径是否有长度限制？**
 
-答：工程文件中的相对路径**不包含**数据目录部分。例如，对于工程文件`/path/to/project.proj`和数据文件`/path/to/project/data_240321_110000_000.pcap`，存储在工程文件中的相对路径仅为`data_240321_110000_000.pcap`，而非`project/data_240321_110000_000.pcap`。
-
-在读取时，系统会按照以下步骤构建完整路径：
-1. 获取工程文件所在目录（如 `/path/to/`）
-2. 添加与工程文件同名的数据目录（如 `project/`）
-3. 附加存储在工程文件中的相对路径（如 `data_240321_110000_000.pcap`）
-4. 最终生成完整路径：`/path/to/project/data_240321_110000_000.pcap`
-
-这种设计使得移动或复制整个数据集更加简便，只需保持工程文件和数据目录的相对位置关系不变。
-
-**问：如何移动或复制整个数据集？**
-
-答：移动或复制时，需保持工程文件与其数据目录的关系。最简单的方法是:
-1. 将工程文件和同名数据目录放在同一父目录下
-2. 一起复制/移动这个父目录
-3. 不要更改工程文件名或数据目录名，保持它们同名
+A: 文件路径受操作系统限制，建议保持路径总长度不超过256个字符。
 
 ### 性能与优化
 
-**问：如何选择合适的索引间隔？**
+**Q: 如何提高写入性能？**
 
-答：索引间隔取决于应用场景:
-- 对于需要毫秒级精确定位的场景，建议使用100-500ms
-- 对于一般应用，1000ms(1秒)通常是平衡点
-- 对于长时间数据且不需要精确定位的场景，可使用5000ms或更长
+A: 使用 `WritePackets` 方法进行批量写入，减少IO操作次数；将 `AutoFlush` 设置为 `false`，减少磁盘写入频率；预先分配较大的数据缓冲区。
 
-**问：大文件(>10GB)性能如何优化？**
+**Q: 数据文件会自动分割吗？**
 
-答：大文件优化建议:
-1. 使用更大的索引间隔（如2-5秒）减小工程文件大小
-2. 将长时间数据分割为多个PCAP文件，每个文件控制在1-5GB
-3. 使用SSD存储提高随机访问性能
-4. 开启预读取功能，提前加载可能访问的数据区块
-
-**问：多文件回放时如何保证时间同步？**
-
-答：协议通过以下机制确保多文件同步:
-1. 所有数据使用统一的UTC时间戳
-2. 时间范围索引表提供跨文件的时间映射
-3. 回放时采用主从同步机制，保证数据按正确顺序输出
-4. 可配置的时间漂移容差，适应不同精度需求
+A: 是的，当文件中数据包数量超过最大限制（默认500个数据包）时，会自动创建新文件继续写入。您也可以手动调用 `Close` 然后重新 `Create` 来创建新文件。
 
 ### 实现与兼容性
 
-**问：是否兼容标准PCAP工具(如Wireshark)?**
+**Q: 文件大小有限制吗？**
 
-答：不完全兼容。虽然文件扩展名相同，但内部格式有所不同:
-- 工程文件使用类似PCAP的文件头，但内部结构经过定制
-- 数据文件使用PCAP格式，无法直接被标准PCAP工具识别
-- 可以通过转换工具生成标准PCAP格式进行交换
+A: 单个数据包大小限制为10MB，PCAP 文件中数据包数量默认限制为500个，超过限制会自动创建新文件。
 
-**问：如何处理不同时区的数据?**
+**Q: 如何在不同操作系统间移动数据文件？**
 
-答：所有时间戳都存储为UTC时间，消除时区问题:
-- 数据写入时，本地时间会自动转换为UTC时间
-- 数据读取时，UTC时间可根据需要转换为本地时间
-- 文件头包含时区信息，便于必要时进行时区转换
+A: PCAP文件使用标准的二进制格式，可以在不同操作系统间直接迁移使用。注意不同操作系统的路径分隔符差异。
 
-**问：如何支持自定义数据类型?**
+**Q: 时间戳精度如何？**
 
-答：协议设计支持任意格式数据:
-1. 数据包内容部分可存储任意字节数组
-2. 可实现自定义序列化/反序列化机制
-3. 可在数据包内容前添加类型标识符字段
-4. 提供扩展接口支持用户定义的数据类型处理器
+A: 系统支持纳秒级时间精度，可以准确记录纳秒级别的事件差异。在存储时，时间戳分为秒部分和纳秒部分分别存储。
+
+**Q: 如何处理大量数据的写入？**
+
+A: 对于大量数据写入，建议将 `AutoFlush` 设置为 `false`，使用 `WritePackets` 方法批量写入，并定期手动调用 `Flush` 方法刷新数据。写入完成后务必调用 `Close` 方法正确关闭文件。
 

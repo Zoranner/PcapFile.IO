@@ -51,8 +51,9 @@ namespace KimoTech.PcapFile.IO.Utils
             // 确保目录存在
             Directory.CreateDirectory(pcapDirectory);
 
-            // 创建文件名：data_yyMMdd_HHmmss_fff.pcap
-            string fileName = $"data_{timestamp:yyMMdd_HHmmss_fff}.pcap";
+            // 创建文件名：data_yyMMdd_HHmmss_fffffff.pcap
+            string fileName =
+                $"data_{timestamp.ToString(FileVersionConfig.DEFAULT_FILE_NAME_FORMAT)}.pcap";
 
             // 返回完整的PCAP文件路径
             return Path.Combine(pcapDirectory, fileName);

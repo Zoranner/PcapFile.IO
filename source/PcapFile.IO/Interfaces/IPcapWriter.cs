@@ -36,24 +36,35 @@ namespace KimoTech.PcapFile.IO.Interfaces
         /// </summary>
         bool IsOpen { get; }
 
+        /// <summary>
+        /// 获取数据工程名称
+        /// </summary>
+        string ProjectName { get; }
+
+        /// <summary>
+        /// 获取输出目录路径
+        /// </summary>
+        string OutputDirectory { get; }
+
         #endregion
 
         #region 方法
 
         /// <summary>
-        /// 创建新的数据文件
+        /// 创建新的数据目录
         /// </summary>
-        /// <param name="filePath">文件路径</param>
-        /// <param name="header">PROJ文件头</param>
+        /// <param name="baseDirectory">基础目录路径</param>
+        /// <param name="projectName">数据工程名称</param>
         /// <returns>是否成功创建</returns>
-        bool Create(string filePath, ProjFileHeader header = default);
+        bool Create(string baseDirectory, string projectName);
 
         /// <summary>
-        /// 打开现有数据文件进行追加
+        /// 打开现有数据目录
         /// </summary>
-        /// <param name="filePath">文件路径</param>
+        /// <param name="baseDirectory">基础目录路径</param>
+        /// <param name="projectName">数据工程名称</param>
         /// <returns>是否成功打开</returns>
-        bool Open(string filePath);
+        bool Open(string baseDirectory, string projectName);
 
         /// <summary>
         /// 关闭数据文件
@@ -78,13 +89,6 @@ namespace KimoTech.PcapFile.IO.Interfaces
         /// 刷新缓冲区
         /// </summary>
         void Flush();
-
-        /// <summary>
-        /// 将当前位置设置到指定偏移量
-        /// </summary>
-        /// <param name="offset">偏移量</param>
-        /// <returns>是否成功设置</returns>
-        bool Seek(long offset);
 
         #endregion
     }

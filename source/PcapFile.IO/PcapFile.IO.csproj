@@ -6,7 +6,7 @@
 		<RootNamespace>KimoTech.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
 		<AssemblyName>PcapFile.IO</AssemblyName>
 		<Authors>Zoranner</Authors>
-		<AssemblyVersion>0.0.4</AssemblyVersion>
+		<AssemblyVersion>0.0.5</AssemblyVersion>
 		<Platforms>AnyCPU;x64;x86</Platforms>
 		<Copyright>$(Authors)</Copyright>
 		<Company>$(Authors)</Company>
@@ -15,7 +15,7 @@
 		<FileVersion>$(AssemblyVersion)</FileVersion>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<PackageTags>pcap;file;io;packet;capture;network;protocol;wireshark;tcpdump;pata</PackageTags>
-		<Description>A high-performance .NET library for reading and writing PCAP format files with custom PATA data storage. Supports packet capture, network protocol analysis, and data storage optimization.</Description>
+		<Description>A high-performance .NET library for writing PCAP format files with custom PATA data storage. Supports packet capture, network protocol analysis, and data storage optimization.</Description>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>

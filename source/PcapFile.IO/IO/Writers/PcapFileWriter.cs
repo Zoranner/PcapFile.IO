@@ -22,7 +22,6 @@ namespace KimoTech.PcapFile.IO.Writers
         private readonly string _FileNameFormat;
         private readonly byte[] _WriteBuffer;
         private int _WriteBufferPosition;
-        private string _ProjFilePath; // PROJ文件路径
         #endregion
 
         #region 属性
@@ -82,14 +81,11 @@ namespace KimoTech.PcapFile.IO.Writers
         #region 公共方法
 
         /// <summary>
-        /// 初始化PCAP文件写入器，仅保存PROJ文件路径，但不创建任何PCAP文件
+        /// 初始化PCAP文件写入器
         /// </summary>
-        public void Initialize(string projFilePath)
+        public void Initialize()
         {
             ThrowIfDisposed();
-
-            // 保存PROJ文件路径
-            _ProjFilePath = projFilePath;
 
             // 重置状态
             CurrentPacketCount = 0;
@@ -99,78 +95,69 @@ namespace KimoTech.PcapFile.IO.Writers
         /// <summary>
         /// 创建新的PCAP文件
         /// </summary>
-        public void Create(string projFilePath)
+        /// <param name="filePath">PCAP文件路径</param>
+        public void Create(string filePath)
         {
             ThrowIfDisposed();
-            Initialize(projFilePath);
-        }
-
-        /// <summary>
-        /// 创建特定时间戳的PCAP文件
-        /// </summary>
-        /// <param name="timestamp">用于命名的时间戳</param>
-        /// <returns>创建的文件路径</returns>
-        public string CreateDataFile(DateTime timestamp)
-        {
-            ThrowIfDisposed();
-
-            if (string.IsNullOrEmpty(_ProjFilePath))
-            {
-                throw new InvalidOperationException("PROJ文件路径未初始化");
-            }
 
             // 关闭现有文件
             DisposeStreams();
 
+            // 确保目录存在
+            var directory = Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
             // 创建新文件
-            var newPath = PathHelper.GetPcapFilePath(_ProjFilePath, timestamp);
             _FileStream = StreamHelper.CreateFileStream(
-                newPath,
+                filePath,
                 FileMode.Create,
                 FileAccess.ReadWrite,
                 FileShare.None
             );
             _BinaryWriter = StreamHelper.CreateBinaryWriter(_FileStream);
-            FilePath = newPath;
+            FilePath = filePath;
 
             // 重置计数器
             CurrentPacketCount = 0;
 
             // 写入文件头
             WriteHeader(PcapFileHeader.Create(0));
-
-            return newPath;
         }
 
         /// <summary>
         /// 打开现有的PCAP文件
         /// </summary>
-        public void Open(string projFilePath)
+        /// <param name="filePath">PCAP文件路径</param>
+        public void Open(string filePath)
         {
             ThrowIfDisposed();
 
-            // 保存PROJ文件路径
-            _ProjFilePath = projFilePath;
-
-            CurrentPacketCount = 0;
-            var latestPcapFile = PathHelper.GetLatestPcapFile(projFilePath);
-
-            if (latestPcapFile != null)
+            if (!File.Exists(filePath))
             {
-                FilePath = latestPcapFile;
-                _FileStream = StreamHelper.CreateFileStream(
-                    FilePath,
-                    FileMode.Open,
-                    FileAccess.ReadWrite,
-                    FileShare.None
-                );
-                _BinaryWriter = StreamHelper.CreateBinaryWriter(_FileStream);
-
-                StreamHelper.ReadStructure<PcapFileHeader>(_FileStream);
-                CurrentPacketCount = (int)(
-                    (_FileStream.Length - PcapFileHeader.HEADER_SIZE) / DataPacketHeader.HEADER_SIZE
-                );
+                throw new FileNotFoundException("文件不存在", filePath);
             }
+
+            // 关闭现有文件
+            DisposeStreams();
+
+            // 打开文件
+            FilePath = filePath;
+            _FileStream = StreamHelper.CreateFileStream(
+                FilePath,
+                FileMode.Open,
+                FileAccess.ReadWrite,
+                FileShare.None
+            );
+            _BinaryWriter = StreamHelper.CreateBinaryWriter(_FileStream);
+
+            // 读取文件头并更新计数
+            StreamHelper.ReadStructure<PcapFileHeader>(_FileStream);
+            CurrentPacketCount = (int)(
+                (_FileStream.Length - PcapFileHeader.HEADER_SIZE) / DataPacketHeader.HEADER_SIZE
+            );
         }
 
         /// <summary>
@@ -278,74 +265,73 @@ namespace KimoTech.PcapFile.IO.Writers
         /// </summary>
         private void FlushBuffer()
         {
-            if (_WriteBufferPosition > 0)
+            if (_WriteBufferPosition > 0 && _BinaryWriter != null)
             {
                 _BinaryWriter.Write(_WriteBuffer, 0, _WriteBufferPosition);
                 _WriteBufferPosition = 0;
             }
         }
 
+        #endregion
+
+        #region IDisposable实现
+
         /// <summary>
         /// 释放资源
         /// </summary>
         public void Dispose()
         {
-            if (_IsDisposed)
-            {
-                return;
-            }
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
 
-            try
+        /// <summary>
+        /// 释放资源
+        /// </summary>
+        /// <param name="disposing">是否释放托管资源</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_IsDisposed)
             {
-                FlushBuffer();
-                DisposeStreams();
-            }
-            finally
-            {
+                if (disposing)
+                {
+                    DisposeStreams();
+                }
+
                 _IsDisposed = true;
             }
         }
 
         /// <summary>
-        /// 关闭当前数据文件
+        /// 关闭文件
         /// </summary>
         public void Close()
         {
-            if (_IsDisposed)
-            {
-                return;
-            }
+            ThrowIfDisposed();
 
-            try
-            {
-                FlushBuffer();
-                DisposeStreams();
-            }
-            catch (Exception ex)
-            {
-                throw new IOException($"关闭数据文件失败: {ex.Message}", ex);
-            }
+            // 刷新缓冲区
+            FlushBuffer();
+
+            // 关闭流
+            DisposeStreams();
         }
 
         /// <summary>
-        /// 刷新缓冲区
+        /// 刷新缓冲区到磁盘
         /// </summary>
         public void Flush()
         {
             ThrowIfDisposed();
 
-            if (_FileStream == null)
+            if (_FileStream != null)
             {
-                throw new InvalidOperationException("文件未打开");
+                FlushBuffer();
+                _FileStream.Flush();
             }
-
-            FlushBuffer();
-            _BinaryWriter?.Flush();
-            _FileStream?.Flush();
         }
 
         /// <summary>
-        /// 检查对象是否已释放，如果已释放则抛出异常
+        /// 检查对象是否已释放
         /// </summary>
         private void ThrowIfDisposed()
         {

@@ -19,7 +19,10 @@ namespace KimoTech.PcapFile.IO.Structures
         /// 数据包捕获时间
         /// </summary>
         public DateTime CaptureTime =>
-            DateTimeExtensions.FromUnixTimeMilliseconds(Header.Timestamp);
+            DateTimeExtensions.FromUnixTimeWithNanoseconds(
+                Header.TimestampSeconds,
+                Header.TimestampNanoseconds
+            );
 
         /// <summary>
         /// 数据包内容
@@ -64,11 +67,11 @@ namespace KimoTech.PcapFile.IO.Structures
         /// <summary>
         /// 构造函数
         /// </summary>
-        /// <param name="timestamp">捕获时间戳</param>
+        /// <param name="captureTime">捕获时间</param>
         /// <param name="data">数据内容</param>
         /// <exception cref="ArgumentNullException">数据为空时抛出</exception>
         /// <exception cref="ArgumentOutOfRangeException">数据大小超过限制时抛出</exception>
-        public DataPacket(long timestamp, byte[] data)
+        public DataPacket(DateTime captureTime, byte[] data)
         {
             if (data == null)
             {
@@ -85,10 +88,40 @@ namespace KimoTech.PcapFile.IO.Structures
 
             Data = data;
 
+            Header = DataPacketHeader.CreateFromPacket(captureTime, data);
+        }
+
+        /// <summary>
+        /// 构造函数
+        /// </summary>
+        /// <param name="timestampSeconds">捕获时间戳(秒)</param>
+        /// <param name="timestampNanoseconds">捕获时间戳(纳秒)</param>
+        /// <param name="data">数据内容</param>
+        /// <exception cref="ArgumentNullException">数据为空时抛出</exception>
+        /// <exception cref="ArgumentOutOfRangeException">数据大小超过限制时抛出</exception>
+        public DataPacket(uint timestampSeconds, uint timestampNanoseconds, byte[] data)
+        {
+            if (data == null)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
+
+            if (data.Length > FileVersionConfig.MAX_PACKET_SIZE)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(data),
+                    $"数据包大小({data.Length}字节)超过了限制({FileVersionConfig.MAX_PACKET_SIZE}字节)"
+                );
+            }
+
+            Data = data;
+
+            uint checksum = ChecksumCalculator.CalculateCrc32(data);
             Header = DataPacketHeader.Create(
-                timestamp,
+                timestampSeconds,
+                timestampNanoseconds,
                 (uint)data.Length,
-                ChecksumCalculator.CalculateCrc32(data)
+                checksum
             );
         }
 

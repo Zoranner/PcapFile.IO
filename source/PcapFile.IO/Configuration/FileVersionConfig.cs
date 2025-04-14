@@ -6,9 +6,9 @@ namespace KimoTech.PcapFile.IO.Configuration
     public static class FileVersionConfig
     {
         /// <summary>
-        /// PCAP文件标识 ("PCAP")
+        /// PCAP文件标识，固定值 0xD4C3B2A1
         /// </summary>
-        public const uint PCAP_MAGIC_NUMBER = 0x50415441;
+        public const uint PCAP_MAGIC_NUMBER = 0xD4C3B2A1;
 
         /// <summary>
         /// PROJ文件标识 ("PROJ")
@@ -16,19 +16,19 @@ namespace KimoTech.PcapFile.IO.Configuration
         public const uint PROJ_MAGIC_NUMBER = 0xA1B2C3D4;
 
         /// <summary>
-        /// 主版本号
+        /// 主版本号，固定值 0x0002
         /// </summary>
-        public const ushort MAJOR_VERSION = 1;
+        public const ushort MAJOR_VERSION = 2;
 
         /// <summary>
-        /// 次版本号
+        /// 次版本号，固定值 0x0004，表示支持纳秒级时间量
         /// </summary>
-        public const ushort MINOR_VERSION = 0;
+        public const ushort MINOR_VERSION = 4;
 
         /// <summary>
-        /// 默认时间戳精度(毫秒)
+        /// 默认时间戳精度(纳秒)
         /// </summary>
-        public const uint DEFAULT_TIMESTAMP_ACCURACY = 1000;
+        public const uint DEFAULT_TIMESTAMP_ACCURACY = 1;
 
         /// <summary>
         /// 默认索引间隔(毫秒)
@@ -68,7 +68,7 @@ namespace KimoTech.PcapFile.IO.Configuration
         /// <summary>
         /// 默认文件命名格式
         /// </summary>
-        public const string DEFAULT_FILE_NAME_FORMAT = "yyMMdd_HHmmss_fff";
+        public const string DEFAULT_FILE_NAME_FORMAT = "yyMMdd_HHmmss_fffffff";
 
         /// <summary>
         /// 数据包最大大小(字节)

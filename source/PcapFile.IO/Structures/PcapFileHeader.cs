@@ -14,55 +14,55 @@ namespace KimoTech.PcapFile.IO.Structures
         /// <summary>
         /// 文件头部大小(字节)
         /// </summary>
-        public const int HEADER_SIZE = 16; // 4 + 4 + 4 + 2 + 2 + 4
+        public const int HEADER_SIZE = 16; // 4 + 2 + 2 + 4 + 4
 
         /// <summary>
-        /// 默认时间戳精度(毫秒)
+        /// 默认时间戳精度(纳秒)
         /// </summary>
-        public const uint DEFAULT_TIMESTAMP_ACCURACY = 1000;
+        public const uint DEFAULT_TIMESTAMP_ACCURACY = 1;
 
         /// <summary>
-        /// 魔术数，固定值 0x50415441 ("PCAP")
+        /// 魔术数，固定值 0xD4C3B2A1
         /// </summary>
         public uint MagicNumber { get; set; }
 
         /// <summary>
-        /// 主版本号
+        /// 主版本号，固定值 0x0002
         /// </summary>
         public ushort MajorVersion { get; set; }
 
         /// <summary>
-        /// 次版本号
+        /// 次版本号，固定值 0x0004，表示支持纳秒级时间量
         /// </summary>
         public ushort MinorVersion { get; set; }
 
         /// <summary>
-        /// 时区偏移量(GMT)
+        /// 时区偏移量(GMT)，固定为0x00
         /// </summary>
-        public int Timezone { get; set; }
+        public int TimezoneOffset { get; set; }
 
         /// <summary>
-        /// 时间戳精度(毫秒)
+        /// 时间戳精度，固定为0x00
         /// </summary>
         public uint TimestampAccuracy { get; set; }
 
-        private PcapFileHeader(int timezone)
+        private PcapFileHeader(int timezoneOffset)
         {
             MagicNumber = FileVersionConfig.PCAP_MAGIC_NUMBER;
             MajorVersion = FileVersionConfig.MAJOR_VERSION;
             MinorVersion = FileVersionConfig.MINOR_VERSION;
-            Timezone = timezone;
-            TimestampAccuracy = FileVersionConfig.DEFAULT_TIMESTAMP_ACCURACY;
+            TimezoneOffset = timezoneOffset;
+            TimestampAccuracy = 0; // 固定为0，与图片要求一致
         }
 
         /// <summary>
         /// 创建一个新的 PcapFileHeader 实例
         /// </summary>
-        /// <param name="timezone">时区偏移量(GMT)</param>
+        /// <param name="timezoneOffset">时区偏移量(GMT)，通常使用0</param>
         /// <returns>初始化后的 PcapFileHeader 实例</returns>
-        public static PcapFileHeader Create(int timezone)
+        public static PcapFileHeader Create(int timezoneOffset = 0)
         {
-            return new PcapFileHeader(timezone);
+            return new PcapFileHeader(timezoneOffset);
         }
 
         /// <summary>
