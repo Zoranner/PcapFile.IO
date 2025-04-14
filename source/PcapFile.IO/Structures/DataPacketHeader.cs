@@ -83,8 +83,8 @@ namespace KimoTech.PcapFile.IO
             uint checksum
         )
         {
-            uint seconds = captureTime.ToUnixTimeSeconds();
-            uint nanoseconds = captureTime.GetNanoseconds();
+            var seconds = captureTime.ToUnixTimeSeconds();
+            var nanoseconds = captureTime.GetNanoseconds();
             return new DataPacketHeader(seconds, nanoseconds, packetLength, checksum);
         }
 

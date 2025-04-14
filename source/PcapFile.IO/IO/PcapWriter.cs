@@ -49,16 +49,6 @@ namespace KimoTech.PcapFile.IO
         /// </summary>
         private string _BaseDirectory;
 
-        /// <summary>
-        /// 数据工程名称
-        /// </summary>
-        private string _ProjectName;
-
-        /// <summary>
-        /// 输出目录路径（工程数据目录）
-        /// </summary>
-        private string _OutputDirectory;
-
         #endregion
 
         #region 构造函数
@@ -107,10 +97,10 @@ namespace KimoTech.PcapFile.IO
         public bool IsOpen => _PcapFileWriter.IsOpen;
 
         /// <inheritdoc />
-        public string ProjectName => _ProjectName;
+        public string ProjectName { get; private set; }
 
         /// <inheritdoc />
-        public string OutputDirectory => _OutputDirectory;
+        public string OutputDirectory { get; private set; }
 
         #endregion
 
@@ -141,7 +131,7 @@ namespace KimoTech.PcapFile.IO
             {
                 // 保存基础目录和工程名称
                 _BaseDirectory = baseDirectory;
-                _ProjectName = projectName;
+                ProjectName = projectName;
 
                 // 创建基础目录
                 if (!Directory.Exists(baseDirectory))
@@ -150,10 +140,10 @@ namespace KimoTech.PcapFile.IO
                 }
 
                 // 创建数据工程目录
-                _OutputDirectory = Path.Combine(baseDirectory, projectName);
-                if (!Directory.Exists(_OutputDirectory))
+                OutputDirectory = Path.Combine(baseDirectory, projectName);
+                if (!Directory.Exists(OutputDirectory))
                 {
-                    Directory.CreateDirectory(_OutputDirectory);
+                    Directory.CreateDirectory(OutputDirectory);
                 }
 
                 // 初始化状态
@@ -193,7 +183,7 @@ namespace KimoTech.PcapFile.IO
 
                 // 保存基础目录和工程名称
                 _BaseDirectory = baseDirectory;
-                _ProjectName = projectName;
+                ProjectName = projectName;
 
                 // 检查并创建基础目录
                 if (!Directory.Exists(baseDirectory))
@@ -202,10 +192,10 @@ namespace KimoTech.PcapFile.IO
                 }
 
                 // 检查数据工程目录
-                _OutputDirectory = Path.Combine(baseDirectory, projectName);
-                if (!Directory.Exists(_OutputDirectory))
+                OutputDirectory = Path.Combine(baseDirectory, projectName);
+                if (!Directory.Exists(OutputDirectory))
                 {
-                    Directory.CreateDirectory(_OutputDirectory);
+                    Directory.CreateDirectory(OutputDirectory);
                 }
 
                 // 初始化状态
@@ -372,9 +362,9 @@ namespace KimoTech.PcapFile.IO
         private void CreateNewFile(DataPacket packet)
         {
             // 确保目录存在
-            if (!Directory.Exists(_OutputDirectory))
+            if (!Directory.Exists(OutputDirectory))
             {
-                Directory.CreateDirectory(_OutputDirectory);
+                Directory.CreateDirectory(OutputDirectory);
             }
 
             // 获取数据包捕获时间
@@ -382,7 +372,7 @@ namespace KimoTech.PcapFile.IO
 
             // 创建新的PCAP文件
             var path = Path.Combine(
-                _OutputDirectory,
+                OutputDirectory,
                 $"data_{timestamp.ToString(FileVersionConfig.DEFAULT_FILE_NAME_FORMAT)}.pcap"
             );
 

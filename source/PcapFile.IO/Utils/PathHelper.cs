@@ -22,10 +22,10 @@ namespace KimoTech.PcapFile.IO
             }
 
             // 获取PROJ文件所在目录
-            string projDirectory = Path.GetDirectoryName(projFilePath);
+            var projDirectory = Path.GetDirectoryName(projFilePath);
 
             // 获取PROJ文件名（不包含扩展名）
-            string projName = Path.GetFileNameWithoutExtension(projFilePath);
+            var projName = Path.GetFileNameWithoutExtension(projFilePath);
 
             // 返回PCAP数据目录路径
             return Path.Combine(projDirectory, projName);
@@ -45,13 +45,13 @@ namespace KimoTech.PcapFile.IO
             }
 
             // 获取PCAP数据目录路径
-            string pcapDirectory = GetPcapDirectoryPath(projFilePath);
+            var pcapDirectory = GetPcapDirectoryPath(projFilePath);
 
             // 确保目录存在
             Directory.CreateDirectory(pcapDirectory);
 
             // 创建文件名：data_yyMMdd_HHmmss_fffffff.pcap
-            string fileName =
+            var fileName =
                 $"data_{timestamp.ToString(FileVersionConfig.DEFAULT_FILE_NAME_FORMAT)}.pcap";
 
             // 返回完整的PCAP文件路径
@@ -77,7 +77,7 @@ namespace KimoTech.PcapFile.IO
             }
 
             // 获取PCAP数据目录路径
-            string pcapDirectory = GetPcapDirectoryPath(projFilePath);
+            var pcapDirectory = GetPcapDirectoryPath(projFilePath);
 
             // 返回完整的PCAP文件路径
             return Path.Combine(pcapDirectory, relativePath);
@@ -96,7 +96,7 @@ namespace KimoTech.PcapFile.IO
             }
 
             // 获取PCAP数据目录路径
-            string pcapDirectory = GetPcapDirectoryPath(projFilePath);
+            var pcapDirectory = GetPcapDirectoryPath(projFilePath);
 
             // 检查目录是否存在
             if (!Directory.Exists(pcapDirectory))
