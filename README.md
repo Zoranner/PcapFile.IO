@@ -17,6 +17,8 @@ PcapFile.IO 是一个用于数据记录的 .NET 库，基于自定义的 PCAP �
 
 - **PcapFile.IO**: 核心库，包含文件格式定义和基本写入功能
 - **PcapFile.IO.Example**: 示例项目，展示库的基本使用方法
+- **PcapFile.IO.Validator**: 验证工具，用于检查PCAP文件是否符合规范并分析内容
+- **PcapFile.IO.UdpBroadcaster**: UDP广播工具，用于将PCAP文件广播到多个目标
 
 ## 文件格式
 
@@ -83,12 +85,31 @@ writer.Flush();
 writer.Close();
 ```
 
+### 验证PCAP文件
+
+使用PcapFileValidator工具验证生成的PCAP文件是否符合规范，并提供详细分析：
+
+```bash
+# 验证单个文件
+PcapFileValidator.exe <PCAP文件路径>
+
+# 验证目录下所有PCAP文件
+PcapFileValidator.exe <PCAP目录路径>
+
+# 显示所有数据包的详细信息
+PcapFileValidator.exe <PCAP文件路径> --all
+
+# 显示数据包内容预览
+PcapFileValidator.exe <PCAP文件路径> --all --preview
+```
+
 ## 开发路线图
 
 - [x] 基础文件写入功能
 - [x] 时间戳精确记录
 - [x] 按工程名组织数据文件
 - [x] 纳秒级时间精度支持
+- [x] 文件格式验证工具
 
 ## 技术要求
 
@@ -98,6 +119,7 @@ writer.Close();
 ## 文档
 
 - [协议规范](./PROTOCOL.md)：完整的数据格式协议文档
+- [验证工具](./source/PcapFile.IO.Validator/README.md)：PCAP文件验证器使用说明
 - API 文档：[即将推出]
 
 ## 贡献指南
