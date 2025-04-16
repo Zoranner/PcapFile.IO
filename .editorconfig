@@ -87,6 +87,12 @@ dotnet_diagnostic.IDE0130.severity = silent
 # IDE0290: 使用主构造函数
 dotnet_diagnostic.IDE0290.severity = silent
 
+# IDE0078: 使用模式匹配
+dotnet_diagnostic.IDE0078.severity = silent
+
+# CA1510: 使用 ArgumentNullException 引发帮助程序
+dotnet_diagnostic.CA1510.severity = silent
+
 #### C# 编码约定 ####
 
 # var 首选项
@@ -108,7 +114,7 @@ csharp_style_expression_bodied_properties = true:warning
 csharp_style_pattern_matching_over_as_with_null_check = true:warning
 csharp_style_pattern_matching_over_is_with_cast_check = true:warning
 csharp_style_prefer_not_pattern = true:warning
-csharp_style_prefer_pattern_matching = true:warning
+csharp_style_prefer_pattern_matching = false:warning
 csharp_style_prefer_switch_expression = false:warning
 
 # Null 检查首选项

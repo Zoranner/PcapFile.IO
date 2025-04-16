@@ -1,11 +1,12 @@
-﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PcapFile.IO", "PcapFile.IO\PcapFile.IO.csproj", "{7FF0817A-2475-4E51-B3E6-0BC86EB8CF8A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PcapFile.IO.Example", "PcapFile.IO.Example\PcapFile.IO.Example.csproj", "{ACE8404F-29EE-4C1D-8BDC-F6569760AB55}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PcapFile.IO.Validator", "PcapFile.IO.Validator\PcapFile.IO.Validator.csproj", "{CE33AE71-2BDF-4B42-843A-BF5EBDFAA072}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +22,10 @@ Global
 		{ACE8404F-29EE-4C1D-8BDC-F6569760AB55}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ACE8404F-29EE-4C1D-8BDC-F6569760AB55}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ACE8404F-29EE-4C1D-8BDC-F6569760AB55}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CE33AE71-2BDF-4B42-843A-BF5EBDFAA072}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE33AE71-2BDF-4B42-843A-BF5EBDFAA072}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CE33AE71-2BDF-4B42-843A-BF5EBDFAA072}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE33AE71-2BDF-4B42-843A-BF5EBDFAA072}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
