@@ -25,45 +25,45 @@ namespace KimoTech.PcapFile.IO
         /// </summary>
         public const ushort MINOR_VERSION = 4;
 
-        /// <summary>
-        /// 默认时间戳精度(纳秒)
-        /// </summary>
-        public const uint DEFAULT_TIMESTAMP_ACCURACY = 1;
+        // /// <summary>
+        // /// 默认时间戳精度(纳秒)
+        // /// </summary>
+        // public const uint DEFAULT_TIMESTAMP_ACCURACY = 1;
 
-        /// <summary>
-        /// 默认索引间隔(毫秒)
-        /// </summary>
-        public const ushort DEFAULT_INDEX_INTERVAL = 1000;
+        // /// <summary>
+        // /// 默认索引间隔(毫秒)
+        // /// </summary>
+        // public const ushort DEFAULT_INDEX_INTERVAL = 1000;
 
         /// <summary>
         /// 每个PCAP文件最大数据包数量
         /// </summary>
         public const int DEFAULT_MAX_PACKETS_PER_FILE = 500;
 
-        /// <summary>
-        /// 默认缓冲区大小(字节)
-        /// </summary>
-        public const int DEFAULT_BUFFER_SIZE = 8192;
+        // /// <summary>
+        // /// 默认缓冲区大小(字节)
+        // /// </summary>
+        // public const int DEFAULT_BUFFER_SIZE = 8192;
 
         /// <summary>
         /// 最大缓冲区大小(字节)
         /// </summary>
-        public const int MAX_BUFFER_SIZE = 1024 * 1024; // 1MB
+        public const int MAX_BUFFER_SIZE = 50 * 1024 * 1024; // 30MB
 
-        /// <summary>
-        /// 最小缓冲区大小(字节)
-        /// </summary>
-        public const int MIN_BUFFER_SIZE = 4096;
+        // /// <summary>
+        // /// 最小缓冲区大小(字节)
+        // /// </summary>
+        // public const int MIN_BUFFER_SIZE = 4096;
 
-        /// <summary>
-        /// 默认索引缓冲区大小(条目数)
-        /// </summary>
-        public const int DEFAULT_INDEX_BUFFER_SIZE = 1000;
+        // /// <summary>
+        // /// 默认索引缓冲区大小(条目数)
+        // /// </summary>
+        // public const int DEFAULT_INDEX_BUFFER_SIZE = 1000;
 
-        /// <summary>
-        /// 默认索引刷新间隔(毫秒)
-        /// </summary>
-        public const int DEFAULT_INDEX_FLUSH_INTERVAL = 5000;
+        // /// <summary>
+        // /// 默认索引刷新间隔(毫秒)
+        // /// </summary>
+        // public const int DEFAULT_INDEX_FLUSH_INTERVAL = 5000;
 
         /// <summary>
         /// 默认文件命名格式
@@ -73,6 +73,6 @@ namespace KimoTech.PcapFile.IO
         /// <summary>
         /// 数据包最大大小(字节)
         /// </summary>
-        public const int MAX_PACKET_SIZE = 10 * 1024 * 1024; // 10MB
+        public const int MAX_PACKET_SIZE = 30 * 1024 * 1024; // 30MB
     }
 }

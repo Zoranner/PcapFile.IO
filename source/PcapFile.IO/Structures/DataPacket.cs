@@ -48,7 +48,7 @@ namespace KimoTech.PcapFile.IO
         /// <returns>如果数据大小在限制范围内返回true，否则返回false</returns>
         public static bool IsValidSize(long dataSize)
         {
-            return dataSize is > 0 and <= FileVersionConfig.MAX_PACKET_SIZE;
+            return dataSize > 0 && dataSize <= FileVersionConfig.MAX_PACKET_SIZE;
         }
 
         /// <summary>
