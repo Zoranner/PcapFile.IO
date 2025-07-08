@@ -229,7 +229,7 @@ namespace PcapFileValidator
                         );
 
                         // 如果需要，显示数据预览
-                        if (showDataPreview && dataPacket.Data.Length > 0)
+                        if (showDataPreview && dataPacket.Data.Count > 0)
                         {
                             Console.WriteLine("数据预览:");
                             PrintDataPreview(dataPacket.Data);
