@@ -24,7 +24,7 @@ namespace KimoTech.PcapFile.IO
         /// <summary>
         /// 数据包内容
         /// </summary>
-        public byte[] Data { get; }
+        public ArraySegment<byte> Data { get; }
 
         /// <summary>
         /// 数据包长度
@@ -68,24 +68,22 @@ namespace KimoTech.PcapFile.IO
         /// <param name="data">数据内容</param>
         /// <exception cref="ArgumentNullException">数据为空时抛出</exception>
         /// <exception cref="ArgumentOutOfRangeException">数据大小超过限制时抛出</exception>
-        public DataPacket(DateTime captureTime, byte[] data)
+        public DataPacket(in DateTime captureTime, ArraySegment<byte> data)
         {
             if (data == null)
             {
                 throw new ArgumentNullException(nameof(data));
             }
 
-            if (data.Length > FileVersionConfig.MAX_PACKET_SIZE)
+            if (data.Count > FileVersionConfig.MAX_PACKET_SIZE)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(data),
-                    $"数据包大小({data.Length}字节)超过了限制({FileVersionConfig.MAX_PACKET_SIZE}字节)"
+                    $"数据包大小({data.Count}字节)超过了限制({FileVersionConfig.MAX_PACKET_SIZE}字节)"
                 );
             }
 
-            Data = data;
-
-            Header = DataPacketHeader.CreateFromPacket(captureTime, data);
+            Header = DataPacketHeader.CreateFromPacket(captureTime, data.AsSpan());
         }
 
         /// <summary>
@@ -129,18 +127,18 @@ namespace KimoTech.PcapFile.IO
         /// <param name="data">数据内容</param>
         /// <exception cref="ArgumentNullException">数据为空时抛出</exception>
         /// <exception cref="ArgumentOutOfRangeException">数据大小超过限制时抛出</exception>
-        public DataPacket(DataPacketHeader header, byte[] data)
+        public DataPacket(DataPacketHeader header, in ArraySegment<byte> data)
         {
             if (data == null)
             {
                 throw new ArgumentNullException(nameof(data));
             }
 
-            if (data.Length > FileVersionConfig.MAX_PACKET_SIZE)
+            if (data.Count > FileVersionConfig.MAX_PACKET_SIZE)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(data),
-                    $"数据包大小({data.Length}字节)超过了限制({FileVersionConfig.MAX_PACKET_SIZE}字节)"
+                    $"数据包大小({data.Count}字节)超过了限制({FileVersionConfig.MAX_PACKET_SIZE}字节)"
                 );
             }
 
