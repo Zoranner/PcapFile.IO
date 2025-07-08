@@ -18,7 +18,27 @@ namespace KimoTech.PcapFile.IO
         /// <returns>校验和</returns>
         public static uint CalculateCrc32(byte[] data)
         {
-            if (data == null || data.Length == 0)
+            return CalculateCrc32(data.AsSpan());
+        }
+
+        /// <summary>
+        /// 计算CRC32校验和
+        /// </summary>
+        /// <param name="data">待计算数据</param>
+        /// <returns>校验和</returns>
+        public static uint CalculateCrc32(ArraySegment<byte> data)
+        {
+            return CalculateCrc32(data.AsSpan());
+        }
+
+        /// <summary>
+        /// 计算CRC32校验和
+        /// </summary>
+        /// <param name="data">待计算数据</param>
+        /// <returns>校验和</returns>
+        public static uint CalculateCrc32(ReadOnlySpan<byte> data)
+        {
+            if (data.Length == 0)
             {
                 return 0;
             }
