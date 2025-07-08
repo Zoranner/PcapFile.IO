@@ -94,7 +94,10 @@ namespace KimoTech.PcapFile.IO
         /// <param name="captureTime">捕获时间</param>
         /// <param name="packetData">数据包内容</param>
         /// <returns>初始化后的 DataPacketHeader 实例</returns>
-        public static DataPacketHeader CreateFromPacket(DateTime captureTime, byte[] packetData)
+        public static DataPacketHeader CreateFromPacket(
+            in DateTime captureTime,
+            Span<byte> packetData
+        )
         {
             if (packetData == null)
             {
