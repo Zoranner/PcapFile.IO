@@ -48,25 +48,19 @@ PcapFile.IO.UdpBroadcaster <PCAP文件路径> -s 2
 调整缓冲区大小（提高性能）:
 
 ```bash
-PcapFile.IO.UdpBroadcaster <PCAP文件路径> -b 200
+PcapFile.IO.UdpBroadcaster <PCAP文件路径> -b 500
 ```
 
-显示详细统计信息:
+关闭详细输出模式:
 
 ```bash
-PcapFile.IO.UdpBroadcaster <PCAP文件路径> --stats
-```
-
-详细模式（显示更多日志）:
-
-```bash
-PcapFile.IO.UdpBroadcaster <PCAP文件路径> -v
+PcapFile.IO.UdpBroadcaster <PCAP文件路径> --quiet
 ```
 
 组合使用多个参数:
 
 ```bash
-PcapFile.IO.UdpBroadcaster <PCAP目录路径> -a 192.168.1.255 -p 8888 -s 2 -b 200 --stats
+PcapFile.IO.UdpBroadcaster <PCAP目录路径> -a 192.168.1.255 -p 8888 -s 2 -b 500
 ```
 
 ## 命令行参数
@@ -76,9 +70,8 @@ PcapFile.IO.UdpBroadcaster <PCAP目录路径> -a 192.168.1.255 -p 8888 -s 2 -b 2
 | `-a, --address <IP地址>` | 指定广播地址 | 255.255.255.255 |
 | `-p, --port <端口>` | 指定广播端口 | 12345 |
 | `-s, --speed <倍速>` | 播放速度倍数 | 1 |
-| `-b, --buffer <大小>` | 缓冲区大小(数据包数量) | 100 |
-| `-v, --verbose` | 显示详细日志信息 | 否 |
-| `--stats` | 显示详细统计信息 | 否 |
+| `-b, --buffer <大小>` | 缓冲区大小(数据包数量) | 1000 |
+| `--quiet` | 关闭详细输出模式 | 否 |
 
 ## 构建方法
 

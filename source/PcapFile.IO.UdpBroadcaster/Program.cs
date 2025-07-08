@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Net;
+﻿using System.Net;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using KimoTech.PcapFile.IO;
 
 namespace KimoTech.PcapFile.IO.UdpBroadcaster
 {
@@ -16,18 +10,84 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
             Console.WriteLine("PCAP文件UDP广播工具");
             Console.WriteLine("=================\n");
 
-            string testDirectory =
-                @"D:\dotnet\Packages\PcapFile.IO\source\PcapFile.IO.Example\bin\Debug\net8.0\data\test_project";
+            // 默认参数
+            var broadcastIp = IPAddress.Parse("255.255.255.255"); // 广播地址
+            var port = 12345; // 端口
+            var playbackSpeed = 1; // 播放速度，1为正常速度
+            var verboseMode = true; // 详细输出模式
+            var bufferSize = 1000; // 缓冲区大小
 
-            if (!Directory.Exists(testDirectory))
+            // 处理命令行参数
+            if (args.Length == 0)
             {
-                Console.WriteLine($"错误: 测试目录不存在 - {testDirectory}");
+                Console.WriteLine("用法: PcapFileUdpBroadcaster <PCAP文件路径或目录路径> [选项]");
+                Console.WriteLine("选项:");
+                Console.WriteLine(
+                    "  -a, --address <IP地址>  指定广播IP地址 (默认: 255.255.255.255)"
+                );
+                Console.WriteLine("  -p, --port <端口>       指定广播端口 (默认: 12345)");
+                Console.WriteLine("  -s, --speed <倍速>      指定播放速度 (默认: 1)");
+                Console.WriteLine("  -b, --buffer <大小>     指定缓冲区大小 (默认: 1000)");
+                Console.WriteLine("  --quiet                关闭详细输出模式");
                 return;
             }
 
-            Console.WriteLine($"测试目录: {testDirectory}\n");
+            var testDirectory = args[0];
 
-            string[] pcapFiles = Directory.GetFiles(testDirectory, "*.pcap");
+            // 解析其他命令行参数
+            for (var i = 1; i < args.Length; i++)
+            {
+                switch (args[i].ToLower())
+                {
+                    case "-a":
+                    case "--address":
+                        if (i + 1 < args.Length && IPAddress.TryParse(args[++i], out var ip))
+                        {
+                            broadcastIp = ip;
+                        }
+
+                        break;
+                    case "-p":
+                    case "--port":
+                        if (i + 1 < args.Length && int.TryParse(args[++i], out var p))
+                        {
+                            port = p;
+                        }
+
+                        break;
+                    case "-s":
+                    case "--speed":
+                        if (i + 1 < args.Length && int.TryParse(args[++i], out var s))
+                        {
+                            playbackSpeed = s;
+                        }
+
+                        break;
+                    case "-b":
+                    case "--buffer":
+                        if (i + 1 < args.Length && int.TryParse(args[++i], out var b))
+                        {
+                            bufferSize = b;
+                        }
+
+                        break;
+                    case "--quiet":
+                        verboseMode = false;
+                        break;
+                }
+            }
+
+            if (!Directory.Exists(testDirectory) && !File.Exists(testDirectory))
+            {
+                Console.WriteLine($"错误: 路径不存在 - {testDirectory}");
+                return;
+            }
+
+            Console.WriteLine($"目标路径: {testDirectory}\n");
+
+            var pcapFiles = Directory.Exists(testDirectory)
+                ? Directory.GetFiles(testDirectory, "*.pcap")
+                : [testDirectory];
 
             if (pcapFiles.Length == 0)
             {
@@ -38,7 +98,7 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
             Console.WriteLine($"找到 {pcapFiles.Length} 个PCAP文件\n");
 
             // 输出找到的PCAP文件和大小
-            foreach (string pcapFile in pcapFiles)
+            foreach (var pcapFile in pcapFiles)
             {
                 var fileInfo = new FileInfo(pcapFile);
                 Console.WriteLine(
@@ -47,12 +107,6 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
             }
 
             Console.WriteLine();
-
-            // 默认参数
-            var broadcastIp = IPAddress.Parse("255.255.255.255"); // 广播地址
-            int port = 12345; // 端口
-            int playbackSpeed = 1; // 播放速度，1为正常速度
-            bool verboseMode = true; // 详细输出模式
 
             // 确认是否开始广播
             Console.WriteLine($"准备广播到: {broadcastIp}:{port}, 播放速度: {playbackSpeed}x");
@@ -68,9 +122,16 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
 
             // 遍历所有PCAP文件进行广播
             Console.WriteLine();
-            foreach (string pcapFile in pcapFiles)
+            foreach (var pcapFile in pcapFiles)
             {
-                await BroadcastPcapFile(pcapFile, broadcastIp, port, playbackSpeed, verboseMode);
+                await BroadcastPcapFile(
+                    pcapFile,
+                    broadcastIp,
+                    port,
+                    playbackSpeed,
+                    verboseMode,
+                    bufferSize
+                );
                 Console.WriteLine("----------------------------------------\n");
             }
 
@@ -85,150 +146,145 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
 
             try
             {
-                using (var reader = new PcapReader(filePath))
+                using var reader = new PcapReader(filePath);
+                // 读取文件头
+                var header = reader.ReadHeader();
+                var fileSize = reader.FileLength;
+                var fileInfo = new FileInfo(filePath);
+
+                Console.WriteLine($"文件头: {GetHeaderBytes(header)}");
+                Console.WriteLine(
+                    $"字节序: {(header.MagicNumber == 0xA1B2C3D4 ? "小端" : "大端")}"
+                );
+                Console.WriteLine($"版本: {header.MajorVersion}.{header.MinorVersion}");
+
+                if (header.MajorVersion != 2 || header.MinorVersion != 4)
                 {
-                    // 读取文件头
-                    var header = reader.ReadHeader();
-                    var fileSize = reader.FileLength;
-                    var fileInfo = new FileInfo(filePath);
-
-                    Console.WriteLine($"文件头: {GetHeaderBytes(header)}");
                     Console.WriteLine(
-                        $"字节序: {(header.MagicNumber == 0xA1B2C3D4 ? "小端" : "大端")}"
+                        $"警告: 版本号 {header.MajorVersion}.{header.MinorVersion} 不是标准版本(2.4)"
                     );
-                    Console.WriteLine($"版本: {header.MajorVersion}.{header.MinorVersion}");
-
-                    if (header.MajorVersion != 2 || header.MinorVersion != 4)
-                    {
-                        Console.WriteLine(
-                            $"警告: 版本号 {header.MajorVersion}.{header.MinorVersion} 不是标准版本(2.4)"
-                        );
-                    }
-
-                    Console.WriteLine(
-                        $"时区偏移: {header.TimezoneOffset}, 精度设置: {header.TimestampAccuracy}"
-                    );
-
-                    var stats = new PacketStatistics();
-
-                    // 读取数据包
-                    Console.WriteLine("\n开始验证数据包...");
-
-                    int batchSize = 10;
-                    bool showAllPackets = false; // 设置为true可以显示所有数据包信息
-                    bool showDataPreview = false; // 设置为true可以显示数据预览
-
-                    if (showAllPackets)
-                    {
-                        Console.WriteLine("\n数据包详细信息:");
-                        Console.WriteLine("序号\t时间戳\t\t\t\t\t数据大小\t校验和\t\t校验结果");
-                        Console.WriteLine(
-                            "--------------------------------------------------------"
-                        );
-                    }
-
-                    while (true)
-                    {
-                        var packets = await reader.ReadPacketBatchAsync(batchSize);
-
-                        if (packets.Count == 0)
-                        {
-                            break;
-                        }
-
-                        foreach (var packet in packets)
-                        {
-                            // 更新统计信息
-                            stats.PacketCount++;
-
-                            // 计算校验和并验证
-                            var calculatedChecksum = ChecksumCalculator.CalculateCrc32(packet.Data);
-                            var checksumValid = calculatedChecksum == packet.Header.Checksum;
-
-                            // 更新统计数据
-                            stats.PacketList.Add(packet);
-                            stats.PacketNumbers[packet] = stats.PacketCount;
-                            stats.CalculatedChecksums[packet] = calculatedChecksum;
-                            stats.ChecksumResults[packet] = checksumValid;
-
-                            // 更新首个和最后一个包的时间戳
-                            if (stats.PacketCount == 1)
-                            {
-                                stats.FirstPacketTime = packet.CaptureTime;
-                            }
-                            stats.LastPacketTime = packet.CaptureTime;
-
-                            // 更新包大小统计
-                            stats.TotalSize += packet.PacketLength;
-
-                            if (stats.PacketCount == 1 || packet.PacketLength < stats.MinPacketSize)
-                            {
-                                stats.MinPacketSize = packet.PacketLength;
-                            }
-
-                            if (packet.PacketLength > stats.MaxPacketSize)
-                            {
-                                stats.MaxPacketSize = packet.PacketLength;
-                            }
-
-                            // 校验结果统计
-                            if (checksumValid)
-                            {
-                                stats.ValidPackets++;
-                            }
-                            else
-                            {
-                                stats.InvalidPackets++;
-                            }
-
-                            // 输出详细信息
-                            if (showAllPackets)
-                            {
-                                Console.WriteLine(
-                                    $"{stats.PacketCount}\t{packet.CaptureTime:yyyy-MM-dd HH:mm:ss.fffffff}\t{packet.PacketLength}\t\t0x{packet.Header.Checksum:X8}\t{(checksumValid ? "成功" : "失败")}"
-                                );
-
-                                // 如果需要，显示数据预览
-                                if (showDataPreview && packet.Data.Length > 0)
-                                {
-                                    Console.WriteLine("数据预览:");
-                                    PrintDataPreview(packet.Data);
-                                    Console.WriteLine();
-                                }
-                            }
-                        }
-
-                        // 每100个包输出一次进度
-                        if (!showAllPackets && stats.PacketCount % 100 == 0)
-                        {
-                            Console.Write($"\r验证数据包中: {stats.PacketCount}");
-                        }
-                    }
-
-                    if (!showAllPackets)
-                    {
-                        Console.WriteLine($"\r验证数据包完成: 共 {stats.PacketCount} 个数据包");
-                    }
-                    else
-                    {
-                        Console.WriteLine(
-                            "--------------------------------------------------------"
-                        );
-                    }
-
-                    // 计算平均数据包率
-                    if (stats.PacketCount > 1)
-                    {
-                        var duration = stats.LastPacketTime - stats.FirstPacketTime;
-                        if (duration.TotalSeconds > 0)
-                        {
-                            stats.AveragePacketRate = stats.PacketCount / duration.TotalSeconds;
-                        }
-                    }
-
-                    // 打印统计信息
-                    PrintStatistics(filePath, stats);
                 }
+
+                Console.WriteLine(
+                    $"时区偏移: {header.TimezoneOffset}, 精度设置: {header.TimestampAccuracy}"
+                );
+
+                var stats = new PacketStatistics();
+
+                // 读取数据包
+                Console.WriteLine("\n开始验证数据包...");
+
+                var batchSize = 10;
+                var showAllPackets = false; // 设置为true可以显示所有数据包信息
+                var showDataPreview = false; // 设置为true可以显示数据预览
+
+                if (showAllPackets)
+                {
+                    Console.WriteLine("\n数据包详细信息:");
+                    Console.WriteLine("序号\t时间戳\t\t\t\t\t数据大小\t校验和\t\t校验结果");
+                    Console.WriteLine("--------------------------------------------------------");
+                }
+
+                while (true)
+                {
+                    var packets = await reader.ReadPacketBatchAsync(batchSize);
+
+                    if (packets.Count == 0)
+                    {
+                        break;
+                    }
+
+                    foreach (var packet in packets)
+                    {
+                        // 更新统计信息
+                        stats.PacketCount++;
+
+                        // 计算校验和并验证
+                        var calculatedChecksum = ChecksumCalculator.CalculateCrc32(packet.Data);
+                        var checksumValid = calculatedChecksum == packet.Header.Checksum;
+
+                        // 更新统计数据
+                        stats.PacketList.Add(packet);
+                        stats.PacketNumbers[packet] = stats.PacketCount;
+                        stats.CalculatedChecksums[packet] = calculatedChecksum;
+                        stats.ChecksumResults[packet] = checksumValid;
+
+                        // 更新首个和最后一个包的时间戳
+                        if (stats.PacketCount == 1)
+                        {
+                            stats.FirstPacketTime = packet.CaptureTime;
+                        }
+
+                        stats.LastPacketTime = packet.CaptureTime;
+
+                        // 更新包大小统计
+                        stats.TotalSize += packet.PacketLength;
+
+                        if (stats.PacketCount == 1 || packet.PacketLength < stats.MinPacketSize)
+                        {
+                            stats.MinPacketSize = packet.PacketLength;
+                        }
+
+                        if (packet.PacketLength > stats.MaxPacketSize)
+                        {
+                            stats.MaxPacketSize = packet.PacketLength;
+                        }
+
+                        // 校验结果统计
+                        if (checksumValid)
+                        {
+                            stats.ValidPackets++;
+                        }
+                        else
+                        {
+                            stats.InvalidPackets++;
+                        }
+
+                        // 输出详细信息
+                        if (showAllPackets)
+                        {
+                            Console.WriteLine(
+                                $"{stats.PacketCount}\t{packet.CaptureTime:yyyy-MM-dd HH:mm:ss.fffffff}\t{packet.PacketLength}\t\t0x{packet.Header.Checksum:X8}\t{(checksumValid ? "成功" : "失败")}"
+                            );
+
+                            // 如果需要，显示数据预览
+                            if (showDataPreview && packet.Data.Length > 0)
+                            {
+                                Console.WriteLine("数据预览:");
+                                PrintDataPreview(packet.Data);
+                                Console.WriteLine();
+                            }
+                        }
+                    }
+
+                    // 每100个包输出一次进度
+                    if (!showAllPackets && stats.PacketCount % 100 == 0)
+                    {
+                        Console.Write($"\r验证数据包中: {stats.PacketCount}");
+                    }
+                }
+
+                if (!showAllPackets)
+                {
+                    Console.WriteLine($"\r验证数据包完成: 共 {stats.PacketCount} 个数据包");
+                }
+                else
+                {
+                    Console.WriteLine("--------------------------------------------------------");
+                }
+
+                // 计算平均数据包率
+                if (stats.PacketCount > 1)
+                {
+                    var duration = stats.LastPacketTime - stats.FirstPacketTime;
+                    if (duration.TotalSeconds > 0)
+                    {
+                        stats.AveragePacketRate = stats.PacketCount / duration.TotalSeconds;
+                    }
+                }
+
+                // 打印统计信息
+                PrintStatistics(filePath, stats);
             }
             catch (Exception ex)
             {
@@ -375,7 +431,8 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
             IPAddress broadcastIp,
             int port,
             int playbackSpeed,
-            bool verboseMode
+            bool verboseMode,
+            int bufferSize
         )
         {
             try
@@ -395,9 +452,9 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
                 // 读取文件头
                 var header = reader.ReadHeader();
                 Console.WriteLine($"文件版本: {header.MajorVersion}.{header.MinorVersion}");
+                Console.WriteLine($"PCAP文件版本: {header.MajorVersion}.{header.MinorVersion}");
 
                 // 创建并启动广播协调器
-                var bufferSize = 1000; // 缓冲区大小
                 using var coordinator = new BroadcastCoordinator(
                     broadcaster,
                     playbackSpeed,
