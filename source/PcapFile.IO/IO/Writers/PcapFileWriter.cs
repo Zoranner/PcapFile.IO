@@ -114,6 +114,7 @@ namespace KimoTech.PcapFile.IO
                 FileAccess.ReadWrite,
                 FileShare.None
             );
+
             _BinaryWriter = StreamHelper.CreateBinaryWriter(_FileStream);
             FilePath = filePath;
 
@@ -171,7 +172,7 @@ namespace KimoTech.PcapFile.IO
 
             var headerBytes = header.ToBytes();
             WriteToBuffer(headerBytes);
-            FlushBuffer();
+            //FlushBuffer();
         }
 
         /// <summary>
@@ -200,7 +201,7 @@ namespace KimoTech.PcapFile.IO
                 // 写入数据包
                 var headerBytes = packet.Header.ToBytes();
                 WriteToBuffer(headerBytes);
-                WriteToBuffer(packet.Data);
+                WriteToBuffer(packet.Data.Array, packet.Data.Offset, packet.Data.Count);
 
                 // 更新计数和大小
                 CurrentPacketCount++;
@@ -219,22 +220,30 @@ namespace KimoTech.PcapFile.IO
         /// </summary>
         private void WriteToBuffer(byte[] data)
         {
+            WriteToBuffer(data, 0, data.Length);
+        }
+
+        /// <summary>
+        /// 写入数据到缓冲区
+        /// </summary>
+        private void WriteToBuffer(byte[] data, int offset, int count)
+        {
             // 如果数据大小超过缓冲区大小，直接写入而不使用缓冲区
-            if (data.Length > _WriteBuffer.Length)
+            if (count > _WriteBuffer.Length)
             {
                 // 先刷新现有缓冲区内容
                 FlushBuffer();
 
                 // 大数据直接分块写入，避免一次性加载到内存
                 const int chunkSize = 4 * 1024 * 1024; // 4MB 块大小
-                if (data.Length > chunkSize)
+                if (count > chunkSize)
                 {
-                    var offset = 0;
-                    while (offset < data.Length)
+                    var currentOffset = offset;
+                    while (currentOffset < offset + count)
                     {
-                        var size = Math.Min(chunkSize, data.Length - offset);
-                        _BinaryWriter.Write(data, offset, size);
-                        offset += size;
+                        var size = Math.Min(chunkSize, offset + count - currentOffset);
+                        _BinaryWriter.Write(data, currentOffset, size);
+                        currentOffset += size;
                     }
 
                     return;
@@ -242,19 +251,19 @@ namespace KimoTech.PcapFile.IO
                 else
                 {
                     // 数据适中，直接写入
-                    _BinaryWriter.Write(data);
+                    _BinaryWriter.Write(data, offset, count);
                     return;
                 }
             }
 
             // 如果当前缓冲区剩余空间不足，先刷新
-            if (_WriteBufferPosition + data.Length > _WriteBuffer.Length)
+            if (_WriteBufferPosition + count > _WriteBuffer.Length)
             {
                 FlushBuffer();
             }
 
-            Array.Copy(data, 0, _WriteBuffer, _WriteBufferPosition, data.Length);
-            _WriteBufferPosition += data.Length;
+            Array.Copy(data, offset, _WriteBuffer, _WriteBufferPosition, count);
+            _WriteBufferPosition += count;
         }
 
         /// <summary>
