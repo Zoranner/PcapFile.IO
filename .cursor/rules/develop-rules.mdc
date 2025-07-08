@@ -3,12 +3,6 @@ description:
 globs: 
 alwaysApply: true
 ---
----
-description: PcapFile.IO 项目开发规范
-globs: ["**/*.cs"]
-alwaysApply: true
----
-
 # PcapFile.IO 项目开发规范
 
 ## 代码规范
