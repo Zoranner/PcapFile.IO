@@ -57,10 +57,10 @@ namespace KimoTech.PcapFile.IO
             // 获取纳秒部分
             // 将Ticks转换为纳秒，1 tick = 100纳秒
             // 只保留时分秒以内的纳秒部分
-            long ticksInSecond = dateTime.Ticks % TimeSpan.TicksPerSecond;
+            var ticksInSecond = dateTime.Ticks % TimeSpan.TicksPerSecond;
 
             // 将Ticks转换为纳秒，1 tick = 100纳秒
-            uint nanoseconds = (uint)(ticksInSecond * 100);
+            var nanoseconds = (uint)(ticksInSecond * 100);
 
             // 注意：由于DateTime的精度限制（最小单位是100纳秒），
             // 所以nanoseconds的最后两位始终为0
@@ -78,7 +78,7 @@ namespace KimoTech.PcapFile.IO
         public static DateTime FromUnixTimeWithNanoseconds(uint seconds, uint nanoseconds)
         {
             // 先添加秒部分
-            DateTime result = _UnixEpoch.AddSeconds(seconds);
+            var result = _UnixEpoch.AddSeconds(seconds);
 
             // 再添加纳秒部分（转换为ticks，1纳秒 = 0.01 ticks）
             // 注意：由于DateTime的精度限制，实际上只有100纳秒的精度
