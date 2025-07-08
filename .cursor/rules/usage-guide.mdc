@@ -1,0 +1,107 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# PcapFile.IO 使用指南
+
+本规则文件提供了 PcapFile.IO 库的使用方法、最佳实践和示例代码，帮助开发者快速上手。
+
+## 基本使用流程
+
+使用 PcapFile.IO 进行数据写入的基本流程如下：
+
+1. 创建 `PcapWriter` 实例
+2. 调用 `Create` 方法指定基础目录和工程名称
+3. 创建 `DataPacket` 对象并写入数据
+4. 完成后关闭写入器
+
+## 代码示例
+
+### 基本数据写入
+
+```csharp
+using KimoTech.PcapFile.IO;
+
+// 创建数据写入器
+using var writer = new PcapWriter();
+
+// 创建新数据工程目录 - 数据将存储在 "data/my_project" 目录中
+writer.Create("data", "my_project");
+
+// 创建数据包
+var data = Encoding.UTF8.GetBytes("测试数据");
+// 直接使用DateTime对象创建数据包
+var packet = new DataPacket(DateTime.Now, data);
+
+// 写入数据包
+writer.WritePacket(packet);
+
+// 刷新缓冲区确保数据写入磁盘
+writer.Flush();
+
+// 关闭文件
+writer.Close();
+```
+
+### 批量写入数据
+
+```csharp
+// 批量写入数据包
+var packets = new List<DataPacket>();
+for (int i = 0; i < 10; i++)
+{
+    var currentTime = DateTime.Now.AddMilliseconds(i * 100);
+    var packetData = Encoding.UTF8.GetBytes($"数据包 #{i}");
+    packets.Add(new DataPacket(currentTime, packetData));
+}
+writer.WritePackets(packets);
+```
+
+## 最佳实践
+
+### 资源管理
+
+- 始终使用 `using` 语句确保资源正确释放
+- 批量写入优于单个写入，减少IO操作
+- 定期调用 `Flush` 方法确保数据写入磁盘
+- 完成写入后显式调用 `Close` 方法
+
+### 性能优化
+
+- 根据数据量和写入频率，合理设置 `AutoFlush` 属性
+- 预先分配数据缓冲区，减少内存分配开销
+- 控制数据包大小，避免超过最大限制 (30MB)
+- 批量写入时，根据实际情况控制批次大小
+
+### 目录管理
+
+- 使用有意义的工程名称，便于数据组织和查找
+- 一个工程目录对应一类相关数据
+- 确保基础目录有足够的磁盘空间
+
+## 数据验证
+
+使用 PcapFile.IO.Validator 工具验证生成的数据文件：
+
+```bash
+# 验证单个文件
+PcapFileValidator.exe <PCAP文件路径>
+
+# 验证目录下所有PCAP文件
+PcapFileValidator.exe <PCAP目录路径>
+
+# 显示所有数据包的详细信息
+PcapFileValidator.exe <PCAP文件路径> --all
+
+# 显示数据包内容预览
+PcapFileValidator.exe <PCAP文件路径> --all --preview
+```
+
+## 注意事项
+
+- 数据包大小不能超过 30MB
+- 时间戳精度为纳秒级
+- 所有时间均使用 UTC 格式
+- 工程名称建议使用字母、数字和下划线
+- 库专注于写入功能，不支持读取操作

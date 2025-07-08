@@ -1,0 +1,88 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# PcapFile.IO 文件格式说明
+
+本规则文件提供了 PcapFile.IO 库所使用的文件格式详细说明，帮助理解数据的存储方式和结构。
+
+## PCAP 文件格式概述
+
+PcapFile.IO 使用扩展的 PCAP 文件格式存储数据。PCAP (Packet Capture) 格式最初设计用于网络数据包捕获，PcapFile.IO 对其进行了扩展，使其能够用于存储任意二进制数据。
+
+## 文件结构
+
+### 1. 文件命名格式
+
+数据文件采用以下命名格式：
+```
+data_yyMMdd_HHmmss_fffffff.pcap
+```
+
+例如：`data_240321_153045_1234567.pcap`，其中时间戳部分根据创建时间自动生成。
+
+### 2. 文件头部 (16 字节)
+
+PCAP 文件以一个固定格式的头部开始：
+
+| 偏移量 | 长度(字节) | 名称                | 描述                         |
+| ------ | ---------- | ------------------- | ---------------------------- |
+| 0      | 4          | Magic Number        | 固定值 0xD4C3B2A1            |
+| 4      | 2          | Major Version       | 主版本号，当前为 0x0002      |
+| 6      | 2          | Minor Version       | 次版本号，当前为 0x0004      |
+| 8      | 4          | Timezone Offset     | 时区偏移量，通常为 0         |
+| 12     | 4          | Timestamp Accuracy  | 时间戳精度，固定为 0         |
+
+相关实现代码：[PcapFileHeader.cs](mdc:source/PcapFile.IO/Structures/PcapFileHeader.cs)
+
+### 3. 数据包结构
+
+文件头部之后是连续的数据包，每个数据包由头部和数据组成：
+
+#### 3.1 数据包头部 (16 字节)
+
+| 偏移量 | 长度(字节) | 名称                  | 描述                       |
+| ------ | ---------- | --------------------- | -------------------------- |
+| 0      | 4          | Timestamp Seconds     | 时间戳秒部分 (UTC)         |
+| 4      | 4          | Timestamp Nanoseconds | 时间戳纳秒部分 (UTC)       |
+| 8      | 4          | Packet Length         | 数据包长度（字节）         |
+| 12     | 4          | Checksum              | 数据包校验和（CRC32）      |
+
+相关实现代码：[DataPacketHeader.cs](mdc:source/PcapFile.IO/Structures/DataPacketHeader.cs)
+
+#### 3.2 数据包数据 (可变长度)
+
+紧随数据包头部之后，存储实际的数据内容。数据长度由数据包头部中的 `Packet Length` 字段指定。
+最大支持 30MB 的数据包大小。
+
+相关实现代码：[DataPacket.cs](mdc:source/PcapFile.IO/Structures/DataPacket.cs)
+
+### 4. 目录结构
+
+PcapFile.IO 使用基于工程名称的目录结构组织数据文件：
+
+```
+/path/to/base-directory/
+└── project-name/                  # 数据工程目录（由工程名称指定）
+    ├── data_240321_153045_1234567.pcap  # 数据文件1
+    ├── data_240321_154012_4567890.pcap  # 数据文件2
+    └── data_240321_155130_7890123.pcap  # 数据文件3
+```
+
+## 关键配置常量
+
+所有文件格式相关的配置常量定义在 [FileVersionConfig.cs](mdc:source/PcapFile.IO/Configuration/FileVersionConfig.cs) 中：
+
+- `PCAP_MAGIC_NUMBER`: PCAP 文件头魔数 (0xD4C3B2A1)
+- `MAJOR_VERSION`: 主版本号 (0x0002)
+- `MINOR_VERSION`: 次版本号 (0x0004)
+- `DEFAULT_MAX_PACKETS_PER_FILE`: 每个文件的最大数据包数量 (500)
+- `MAX_PACKET_SIZE`: 单个数据包最大大小 (30MB)
+- `DEFAULT_FILE_NAME_FORMAT`: 默认文件命名格式 ("yyMMdd_HHmmss_fffffff")
+
+## 时间戳和精度
+
+- 所有时间戳采用 UTC 时间
+- 支持纳秒级精度的时间戳（秒+纳秒分开存储）
+- 时间戳转换方法在 DateTimeExtensions 中实现

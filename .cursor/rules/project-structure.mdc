@@ -1,0 +1,69 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# PcapFile.IO 项目结构导航指南
+
+## 项目概述
+
+PcapFile.IO 是一个专为数据记录设计的 .NET 库，基于自定义的 PCAP 文件格式，提供高效存储和管理多源异构数据的能力。该库支持 .NET Standard 2.1、.NET 6.0 和 .NET 8.0 多目标框架。
+
+## 核心项目
+
+项目由以下几个主要组件构成：
+
+1. **PcapFile.IO** - 核心库，包含文件格式定义和基本写入功能
+   - 路径：[source/PcapFile.IO/PcapFile.IO.csproj](mdc:source/PcapFile.IO/PcapFile.IO.csproj)
+
+2. **PcapFile.IO.Example** - 示例项目，展示库的基本使用方法
+   - 路径：[source/PcapFile.IO.Example/PcapFile.IO.Example.csproj](mdc:source/PcapFile.IO.Example/PcapFile.IO.Example.csproj)
+
+3. **PcapFile.IO.Validator** - 验证工具，用于检查PCAP文件是否符合规范并分析内容
+   - 路径：[source/PcapFile.IO.Validator/PcapFile.IO.Validator.csproj](mdc:source/PcapFile.IO.Validator/PcapFile.IO.Validator.csproj)
+
+4. **PcapFile.IO.UdpBroadcaster** - UDP广播工具，用于将PCAP文件广播到多个目标
+   - 路径：[source/PcapFile.IO.UdpBroadcaster/PcapFile.IO.UdpBroadcaster.csproj](mdc:source/PcapFile.IO.UdpBroadcaster/PcapFile.IO.UdpBroadcaster.csproj)
+
+## 核心库结构 (PcapFile.IO)
+
+核心库按照以下命名空间组织：
+
+1. **KimoTech.PcapFile.IO** - 根命名空间，包含主要接口和类
+   - [Interfaces/](mdc:source/PcapFile.IO/Interfaces) - 所有接口定义
+   - [IO/](mdc:source/PcapFile.IO/IO) - 文件读写相关功能
+   - [Structures/](mdc:source/PcapFile.IO/Structures) - 数据结构定义
+   - [Configuration/](mdc:source/PcapFile.IO/Configuration) - 配置相关
+   - [Utils/](mdc:source/PcapFile.IO/Utils) - 工具类
+   - [Extensions/](mdc:source/PcapFile.IO/Extensions) - 扩展方法
+
+## 主要文件和类
+
+### 核心结构文件
+
+- **数据包相关**:
+  - [DataPacket.cs](mdc:source/PcapFile.IO/Structures/DataPacket.cs) - 数据包类，封装实际存储的数据
+  - [DataPacketHeader.cs](mdc:source/PcapFile.IO/Structures/DataPacketHeader.cs) - 数据包头部结构
+
+- **文件结构相关**:
+  - [PcapFileHeader.cs](mdc:source/PcapFile.IO/Structures/PcapFileHeader.cs) - PCAP文件头部结构
+
+### 核心功能文件
+
+- **数据写入相关**:
+  - [PcapWriter.cs](mdc:source/PcapFile.IO/IO/PcapWriter.cs) - PCAP文件写入器，提供创建和写入PCAP文件的功能
+  - [PcapFileWriter.cs](mdc:source/PcapFile.IO/IO/Writers/PcapFileWriter.cs) - PCAP文件写入器的具体实现
+
+### 配置和工具
+
+- [FileVersionConfig.cs](mdc:source/PcapFile.IO/Configuration/FileVersionConfig.cs) - 文件版本配置，定义了常量和默认值
+
+## 代码规范
+
+本项目遵循 [develop-rules.mdc](mdc:.cursor/rules/develop-rules.mdc) 中定义的代码规范。
+
+
+
+
+
+
