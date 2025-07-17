@@ -1,9 +1,9 @@
 namespace KimoTech.PcapFile.IO
 {
     /// <summary>
-    /// 文件版本配置
+    /// PCAP格式常量定义
     /// </summary>
-    public static class FileVersionConfig
+    public static class PcapConstants
     {
         /// <summary>
         /// PCAP文件标识，固定值 0xD4C3B2A1

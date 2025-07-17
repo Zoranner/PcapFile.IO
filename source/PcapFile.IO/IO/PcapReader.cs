@@ -45,6 +45,16 @@ namespace KimoTech.PcapFile.IO
         /// </summary>
         private long _TotalPacketCount;
 
+        /// <summary>
+        /// 文件信息缓存
+        /// </summary>
+        private readonly FileInfoCache _FileInfoCache;
+
+        /// <summary>
+        /// 配置信息
+        /// </summary>
+        private readonly PcapConfiguration _Configuration;
+
         #endregion
 
         #region 构造函数
@@ -52,8 +62,11 @@ namespace KimoTech.PcapFile.IO
         /// <summary>
         /// 初始化PCAP文件读取器
         /// </summary>
-        public PcapReader()
+        /// <param name="configuration">配置信息</param>
+        public PcapReader(PcapConfiguration configuration = null)
         {
+            _Configuration = configuration ?? PcapConfiguration.Default;
+            _FileInfoCache = new FileInfoCache(_Configuration);
             _PcapFileReader = new PcapFileReader();
             _IsDisposed = false;
             _CurrentFileIndex = -1;
@@ -105,6 +118,7 @@ namespace KimoTech.PcapFile.IO
                 {
                     CalculateTotalPacketCount();
                 }
+
                 return _TotalPacketCount;
             }
         }
@@ -158,7 +172,9 @@ namespace KimoTech.PcapFile.IO
                 }
 
                 // 打开第一个文件
-                ResetState();
+                _CurrentFileIndex = -1; // 重置索引但不清空文件列表
+                PacketCount = 0;
+                _TotalPacketCount = 0;
                 return OpenNextFile();
             }
             catch (Exception ex)
@@ -256,13 +272,14 @@ namespace KimoTech.PcapFile.IO
                 yield break;
             }
 
-            for (int i = 0; i < count; i++)
+            for (var i = 0; i < count; i++)
             {
                 var packet = ReadNextPacket();
                 if (packet == null)
                 {
                     yield break;
                 }
+
                 yield return packet;
             }
         }
@@ -328,6 +345,35 @@ namespace KimoTech.PcapFile.IO
             return _ProjectFiles.AsReadOnly();
         }
 
+        /// <summary>
+        /// 获取缓存统计信息
+        /// </summary>
+        /// <returns>缓存统计信息</returns>
+        public CacheStatistics GetCacheStatistics()
+        {
+            ThrowIfDisposed();
+            return _FileInfoCache.GetStatistics();
+        }
+
+        /// <summary>
+        /// 清除文件信息缓存
+        /// </summary>
+        public void ClearCache()
+        {
+            ThrowIfDisposed();
+            _FileInfoCache.Clear();
+            _TotalPacketCount = 0; // 重置总数据包数量，下次访问时会重新计算
+        }
+
+        /// <summary>
+        /// 强制执行缓存清理
+        /// </summary>
+        public void ForceCleanupCache()
+        {
+            ThrowIfDisposed();
+            _FileInfoCache.ForceCleanup();
+        }
+
         #endregion
 
         #region 私有方法
@@ -341,6 +387,9 @@ namespace KimoTech.PcapFile.IO
             _CurrentFileIndex = -1;
             _TotalPacketCount = 0;
             _ProjectFiles.Clear();
+
+            // 清理相关文件的缓存
+            _FileInfoCache?.Clear();
         }
 
         /// <summary>
@@ -389,9 +438,44 @@ namespace KimoTech.PcapFile.IO
         }
 
         /// <summary>
-        /// 计算所有文件的总数据包数量
+        /// 计算所有文件的总数据包数量（使用缓存优化）
         /// </summary>
         private void CalculateTotalPacketCount()
+        {
+            _TotalPacketCount = 0;
+
+            try
+            {
+                // 使用缓存批量获取所有文件的数据包数量
+                var result = _FileInfoCache.GetPacketCounts(_ProjectFiles);
+
+                if (result.IsSuccess)
+                {
+                    _TotalPacketCount = result.Value.Values.Sum();
+                }
+                else
+                {
+                    // 缓存获取失败，回退到逐个文件计算
+                    System.Diagnostics.Debug.WriteLine(
+                        $"缓存获取失败，回退到传统方式: {result.ErrorMessage}"
+                    );
+                    CalculateTotalPacketCountFallback();
+                }
+            }
+            catch (Exception ex)
+            {
+                // 如果出现异常，回退到传统方式
+                System.Diagnostics.Debug.WriteLine(
+                    $"计算总数据包数量时发生异常，回退到传统方式: {ex.Message}"
+                );
+                CalculateTotalPacketCountFallback();
+            }
+        }
+
+        /// <summary>
+        /// 传统方式计算数据包数量（回退方案）
+        /// </summary>
+        private void CalculateTotalPacketCountFallback()
         {
             _TotalPacketCount = 0;
 
@@ -409,11 +493,34 @@ namespace KimoTech.PcapFile.IO
                     try
                     {
                         tempReader.Open(filePath);
+                        long filePacketCount = 0;
                         while (tempReader.ReadPacket() != null)
                         {
+                            filePacketCount++;
                             _TotalPacketCount++;
                         }
+
                         tempReader.Close();
+
+                        // 即使传统方式也尝试更新缓存
+                        if (_Configuration.EnableIndexCache)
+                        {
+                            try
+                            {
+                                var fileInfo = new FileInfo(filePath);
+                                var cacheItem = FileInfoCacheItem.FromFileInfo(
+                                    fileInfo,
+                                    filePacketCount
+                                );
+                                _FileInfoCache.InvalidateFile(filePath); // 先清除旧缓存
+                            }
+                            catch (Exception cacheEx)
+                            {
+                                System.Diagnostics.Debug.WriteLine(
+                                    $"更新缓存失败: {cacheEx.Message}"
+                                );
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -473,6 +580,9 @@ namespace KimoTech.PcapFile.IO
                     // 关闭数据文件
                     _PcapFileReader?.Close();
                     _PcapFileReader?.Dispose();
+
+                    // 清理缓存
+                    _FileInfoCache?.Clear();
                 }
 
                 _IsDisposed = true;

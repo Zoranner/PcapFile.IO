@@ -62,7 +62,7 @@ namespace KimoTech.PcapFile.IO
 
         #region 构造函数
 
-        public PcapFileReader(int bufferSize = FileVersionConfig.MAX_BUFFER_SIZE)
+        public PcapFileReader(int bufferSize = PcapConstants.MAX_BUFFER_SIZE)
         {
             _ReadBuffer = new byte[bufferSize];
         }
@@ -332,7 +332,7 @@ namespace KimoTech.PcapFile.IO
         {
             if (length <= 0)
             {
-                return new byte[0];
+                return Array.Empty<byte>();
             }
 
             if (_FileStream.Position + length > _FileStream.Length)

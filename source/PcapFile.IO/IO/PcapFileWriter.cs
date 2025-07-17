@@ -63,9 +63,9 @@ namespace KimoTech.PcapFile.IO
         #region 构造函数
 
         public PcapFileWriter(
-            int maxPacketsPerFile = FileVersionConfig.DEFAULT_MAX_PACKETS_PER_FILE,
-            string fileNameFormat = FileVersionConfig.DEFAULT_FILE_NAME_FORMAT,
-            int bufferSize = FileVersionConfig.MAX_BUFFER_SIZE
+            int maxPacketsPerFile = PcapConstants.DEFAULT_MAX_PACKETS_PER_FILE,
+            string fileNameFormat = PcapConstants.DEFAULT_FILE_NAME_FORMAT,
+            int bufferSize = PcapConstants.MAX_BUFFER_SIZE
         )
         {
             MaxPacketsPerFile = maxPacketsPerFile;
@@ -172,7 +172,7 @@ namespace KimoTech.PcapFile.IO
 
             var headerBytes = header.ToBytes();
             WriteToBuffer(headerBytes);
-            //FlushBuffer();
+            FlushBuffer();
         }
 
         /// <summary>
@@ -352,17 +352,10 @@ namespace KimoTech.PcapFile.IO
         /// </summary>
         private void DisposeStreams()
         {
-            if (_BinaryWriter != null)
-            {
-                _BinaryWriter.Dispose();
-                _BinaryWriter = null;
-            }
-
-            if (_FileStream != null)
-            {
-                _FileStream.Dispose();
-                _FileStream = null;
-            }
+            _BinaryWriter?.Dispose();
+            _BinaryWriter = null;
+            _FileStream?.Dispose();
+            _FileStream = null;
         }
 
         #endregion

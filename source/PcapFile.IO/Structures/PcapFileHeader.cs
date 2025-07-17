@@ -46,9 +46,9 @@ namespace KimoTech.PcapFile.IO
 
         private PcapFileHeader(int timezoneOffset)
         {
-            MagicNumber = FileVersionConfig.PCAP_MAGIC_NUMBER;
-            MajorVersion = FileVersionConfig.MAJOR_VERSION;
-            MinorVersion = FileVersionConfig.MINOR_VERSION;
+            MagicNumber = PcapConstants.PCAP_MAGIC_NUMBER;
+            MajorVersion = PcapConstants.MAJOR_VERSION;
+            MinorVersion = PcapConstants.MINOR_VERSION;
             TimezoneOffset = timezoneOffset;
             TimestampAccuracy = 0; // 固定为0，与图片要求一致
         }

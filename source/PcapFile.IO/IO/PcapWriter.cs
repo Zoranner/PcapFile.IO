@@ -373,7 +373,7 @@ namespace KimoTech.PcapFile.IO
             // 创建新的PCAP文件
             var path = Path.Combine(
                 OutputDirectory,
-                $"data_{timestamp.ToString(FileVersionConfig.DEFAULT_FILE_NAME_FORMAT)}.pcap"
+                $"data_{timestamp.ToString(PcapConstants.DEFAULT_FILE_NAME_FORMAT)}.pcap"
             );
 
             if (_PcapFileWriter.IsOpen)

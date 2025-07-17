@@ -48,7 +48,7 @@ namespace KimoTech.PcapFile.IO
         /// <returns>如果数据大小在限制范围内返回true，否则返回false</returns>
         public static bool IsValidSize(long dataSize)
         {
-            return dataSize > 0 && dataSize <= FileVersionConfig.MAX_PACKET_SIZE;
+            return dataSize > 0 && dataSize <= PcapConstants.MAX_PACKET_SIZE;
         }
 
         /// <summary>
@@ -62,32 +62,46 @@ namespace KimoTech.PcapFile.IO
         }
 
         /// <summary>
-        /// 构造函数
+        /// 主构造函数 - 使用预构建的头部信息
+        /// </summary>
+        /// <param name="header">数据包头</param>
+        /// <param name="data">数据内容</param>
+        /// <exception cref="ArgumentNullException">数据为空时抛出</exception>
+        /// <exception cref="ArgumentOutOfRangeException">数据大小超过限制时抛出</exception>
+        public DataPacket(DataPacketHeader header, ArraySegment<byte> data)
+        {
+            ValidateData(data);
+
+            Data = data;
+            Header = header;
+        }
+
+        /// <summary>
+        /// 构造函数 - 使用捕获时间自动生成头部
         /// </summary>
         /// <param name="captureTime">捕获时间</param>
         /// <param name="data">数据内容</param>
         /// <exception cref="ArgumentNullException">数据为空时抛出</exception>
         /// <exception cref="ArgumentOutOfRangeException">数据大小超过限制时抛出</exception>
         public DataPacket(in DateTime captureTime, ArraySegment<byte> data)
-        {
-            if (data == null)
-            {
-                throw new ArgumentNullException(nameof(data));
-            }
-
-            if (data.Count > FileVersionConfig.MAX_PACKET_SIZE)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(data),
-                    $"数据包大小({data.Count}字节)超过了限制({FileVersionConfig.MAX_PACKET_SIZE}字节)"
-                );
-            }
-
-            Header = DataPacketHeader.CreateFromPacket(captureTime, data.AsSpan());
-        }
+            : this(DataPacketHeader.CreateFromPacket(captureTime, ValidateAndGetSpan(data)), data)
+        { }
 
         /// <summary>
-        /// 构造函数
+        /// 构造函数 - 使用捕获时间和byte[]数组
+        /// </summary>
+        /// <param name="captureTime">捕获时间</param>
+        /// <param name="data">数据内容</param>
+        /// <exception cref="ArgumentNullException">数据为空时抛出</exception>
+        /// <exception cref="ArgumentOutOfRangeException">数据大小超过限制时抛出</exception>
+        public DataPacket(in DateTime captureTime, byte[] data)
+            : this(
+                captureTime,
+                new ArraySegment<byte>(data ?? throw new ArgumentNullException(nameof(data)))
+            ) { }
+
+        /// <summary>
+        /// 构造函数 - 使用时间戳
         /// </summary>
         /// <param name="timestampSeconds">捕获时间戳(秒)</param>
         /// <param name="timestampNanoseconds">捕获时间戳(纳秒)</param>
@@ -95,55 +109,101 @@ namespace KimoTech.PcapFile.IO
         /// <exception cref="ArgumentNullException">数据为空时抛出</exception>
         /// <exception cref="ArgumentOutOfRangeException">数据大小超过限制时抛出</exception>
         public DataPacket(uint timestampSeconds, uint timestampNanoseconds, byte[] data)
+            : this(
+                CreateHeaderFromTimestamp(timestampSeconds, timestampNanoseconds, data),
+                new ArraySegment<byte>(data ?? throw new ArgumentNullException(nameof(data)))
+            ) { }
+
+        /// <summary>
+        /// 构造函数 - 使用时间戳和ArraySegment
+        /// </summary>
+        /// <param name="timestampSeconds">捕获时间戳(秒)</param>
+        /// <param name="timestampNanoseconds">捕获时间戳(纳秒)</param>
+        /// <param name="data">数据内容</param>
+        /// <exception cref="ArgumentNullException">数据为空时抛出</exception>
+        /// <exception cref="ArgumentOutOfRangeException">数据大小超过限制时抛出</exception>
+        public DataPacket(uint timestampSeconds, uint timestampNanoseconds, ArraySegment<byte> data)
+            : this(CreateHeaderFromTimestamp(timestampSeconds, timestampNanoseconds, data), data)
+        { }
+
+        /// <summary>
+        /// 验证数据有效性
+        /// </summary>
+        /// <param name="data">要验证的数据</param>
+        /// <exception cref="ArgumentNullException">数据为空时抛出</exception>
+        /// <exception cref="ArgumentOutOfRangeException">数据大小超过限制时抛出</exception>
+        private static void ValidateData(ArraySegment<byte> data)
         {
-            if (data == null)
+            if (data.Array == null)
             {
-                throw new ArgumentNullException(nameof(data));
+                throw new ArgumentNullException(nameof(data), "数据不能为空");
             }
 
-            if (data.Length > FileVersionConfig.MAX_PACKET_SIZE)
+            if (data.Count > PcapConstants.MAX_PACKET_SIZE)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(data),
-                    $"数据包大小({data.Length}字节)超过了限制({FileVersionConfig.MAX_PACKET_SIZE}字节)"
+                    $"数据包大小({data.Count}字节)超过了限制({PcapConstants.MAX_PACKET_SIZE}字节)"
                 );
             }
+        }
 
-            Data = data;
+        /// <summary>
+        /// 验证数据并获取Span - 用于构造函数链调用
+        /// </summary>
+        /// <param name="data">要验证的数据</param>
+        /// <returns>数据的Span表示</returns>
+        /// <exception cref="ArgumentNullException">数据为空时抛出</exception>
+        /// <exception cref="ArgumentOutOfRangeException">数据大小超过限制时抛出</exception>
+        private static Span<byte> ValidateAndGetSpan(ArraySegment<byte> data)
+        {
+            ValidateData(data);
+            return data.AsSpan();
+        }
 
-            var checksum = ChecksumCalculator.CalculateCrc32(data);
-            Header = DataPacketHeader.Create(
+        /// <summary>
+        /// 从时间戳创建数据包头
+        /// </summary>
+        /// <param name="timestampSeconds">时间戳秒部分</param>
+        /// <param name="timestampNanoseconds">时间戳纳秒部分</param>
+        /// <param name="data">数据内容</param>
+        /// <returns>创建的数据包头</returns>
+        private static DataPacketHeader CreateHeaderFromTimestamp(
+            uint timestampSeconds,
+            uint timestampNanoseconds,
+            ArraySegment<byte> data
+        )
+        {
+            ValidateData(data);
+            var checksum = ChecksumCalculator.CalculateCrc32(data.AsSpan());
+            return DataPacketHeader.Create(
                 timestampSeconds,
                 timestampNanoseconds,
-                (uint)data.Length,
+                (uint)data.Count,
                 checksum
             );
         }
 
         /// <summary>
-        /// 构造函数
+        /// 从时间戳创建数据包头 - byte[]重载
         /// </summary>
-        /// <param name="header">数据包头</param>
+        /// <param name="timestampSeconds">时间戳秒部分</param>
+        /// <param name="timestampNanoseconds">时间戳纳秒部分</param>
         /// <param name="data">数据内容</param>
-        /// <exception cref="ArgumentNullException">数据为空时抛出</exception>
-        /// <exception cref="ArgumentOutOfRangeException">数据大小超过限制时抛出</exception>
-        public DataPacket(DataPacketHeader header, in ArraySegment<byte> data)
+        /// <returns>创建的数据包头</returns>
+        private static DataPacketHeader CreateHeaderFromTimestamp(
+            uint timestampSeconds,
+            uint timestampNanoseconds,
+            byte[] data
+        )
         {
-            if (data == null)
-            {
-                throw new ArgumentNullException(nameof(data));
-            }
-
-            if (data.Count > FileVersionConfig.MAX_PACKET_SIZE)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(data),
-                    $"数据包大小({data.Count}字节)超过了限制({FileVersionConfig.MAX_PACKET_SIZE}字节)"
+            return data == null
+                ? throw new ArgumentNullException(nameof(data))
+                : CreateHeaderFromTimestamp(
+                    timestampSeconds,
+                    timestampNanoseconds,
+                    new ArraySegment<byte>(data)
                 );
-            }
-
-            Data = data;
-            Header = header;
         }
     }
 }

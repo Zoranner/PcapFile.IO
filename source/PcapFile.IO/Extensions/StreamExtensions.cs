@@ -64,9 +64,7 @@ namespace KimoTech.PcapFile.IO
             while (totalBytesRead < count)
             {
                 var bytesRead = await stream.ReadAsync(
-                    buffer,
-                    totalBytesRead,
-                    count - totalBytesRead,
+                    buffer.AsMemory(totalBytesRead, count - totalBytesRead),
                     cancellationToken
                 );
                 if (bytesRead == 0)

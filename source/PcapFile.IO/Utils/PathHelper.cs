@@ -52,7 +52,7 @@ namespace KimoTech.PcapFile.IO
 
             // 创建文件名：data_yyMMdd_HHmmss_fffffff.pcap
             var fileName =
-                $"data_{timestamp.ToString(FileVersionConfig.DEFAULT_FILE_NAME_FORMAT)}.pcap";
+                $"data_{timestamp.ToString(PcapConstants.DEFAULT_FILE_NAME_FORMAT)}.pcap";
 
             // 返回完整的PCAP文件路径
             return Path.Combine(pcapDirectory, fileName);
