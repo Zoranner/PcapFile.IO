@@ -110,7 +110,7 @@ namespace KimoTech.PcapFile.IO
         /// 创建新的PCAP文件
         /// </summary>
         /// <param name="baseDirectory">基础目录路径</param>
-        /// <param name="projectName">数据工程名称</param>
+        /// <param name="projectName">数据集名称</param>
         /// <returns>是否成功创建</returns>
         /// <exception cref="ArgumentNullException">目录路径为空时抛出</exception>
         /// <exception cref="ObjectDisposedException">对象已释放时抛出</exception>
@@ -124,12 +124,12 @@ namespace KimoTech.PcapFile.IO
 
             if (string.IsNullOrEmpty(projectName))
             {
-                throw new ArgumentException("数据工程名称不能为空", nameof(projectName));
+                throw new ArgumentException("数据集名称不能为空", nameof(projectName));
             }
 
             try
             {
-                // 保存基础目录和工程名称
+                // 保存基础目录和数据集名称
                 _BaseDirectory = baseDirectory;
                 ProjectName = projectName;
 
@@ -139,7 +139,7 @@ namespace KimoTech.PcapFile.IO
                     Directory.CreateDirectory(baseDirectory);
                 }
 
-                // 创建数据工程目录
+                // 创建数据集目录
                 OutputDirectory = Path.Combine(baseDirectory, projectName);
                 if (!Directory.Exists(OutputDirectory))
                 {
@@ -163,7 +163,7 @@ namespace KimoTech.PcapFile.IO
         /// 打开现有PCAP文件
         /// </summary>
         /// <param name="baseDirectory">基础目录路径</param>
-        /// <param name="projectName">数据工程名称</param>
+        /// <param name="projectName">数据集名称</param>
         /// <returns>是否成功打开</returns>
         public bool Open(string baseDirectory, string projectName)
         {
@@ -178,10 +178,10 @@ namespace KimoTech.PcapFile.IO
 
                 if (string.IsNullOrEmpty(projectName))
                 {
-                    throw new ArgumentException("数据工程名称不能为空", nameof(projectName));
+                    throw new ArgumentException("数据集名称不能为空", nameof(projectName));
                 }
 
-                // 保存基础目录和工程名称
+                // 保存基础目录和数据集名称
                 _BaseDirectory = baseDirectory;
                 ProjectName = projectName;
 
@@ -191,7 +191,7 @@ namespace KimoTech.PcapFile.IO
                     Directory.CreateDirectory(baseDirectory);
                 }
 
-                // 检查数据工程目录
+                // 检查数据集目录
                 OutputDirectory = Path.Combine(baseDirectory, projectName);
                 if (!Directory.Exists(OutputDirectory))
                 {

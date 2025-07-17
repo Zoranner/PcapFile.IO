@@ -7,7 +7,7 @@ namespace KimoTech.PcapFile.IO
     /// PCAP文件读取器，负责管理PCAP数据文件的打开、读取和关闭操作
     /// </summary>
     /// <remarks>
-    /// 注意：此类设计为单线程使用，不支持多线程并发读取。
+    /// 注意: 此类设计为单线程使用，不支持多线程并发读取。
     /// </remarks>
     internal class PcapFileReader : IDisposable
     {

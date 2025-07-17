@@ -24,7 +24,7 @@ namespace PcapFile.IO.Example
 
                 Console.WriteLine($"程序根目录: {rootDirectory}");
                 Console.WriteLine($"输出目录: {outputDir}");
-                Console.WriteLine($"工程名称: {PROJECT_NAME}");
+                Console.WriteLine($"数据集名称: {PROJECT_NAME}");
                 Console.WriteLine($"测试参数: {PACKET_COUNT} 个数据包，每个 {PACKET_SIZE} 字节");
                 Console.WriteLine();
 
@@ -163,7 +163,6 @@ namespace PcapFile.IO.Example
             else
             {
                 Console.WriteLine("✗ 数据一致性验证失败！");
-                Console.WriteLine($"发现 {errors.Count} 个错误：");
                 foreach (var error in errors.Take(10)) // 只显示前10个错误
                 {
                     Console.WriteLine($"  - {error}");

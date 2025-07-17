@@ -41,17 +41,17 @@ PcapFileValidator.exe <PCAP文件路径> --all --preview
 
 - [Program.cs](mdc:source/PcapFile.IO.Validator/Program.cs) - 验证器主程序
 
-## 2. PcapFile.IO.UdpBroadcaster
+## 2. PcapFile.IO.UdpTransmitter
 
 ### 简介
 
-UDP 广播工具，用于将 PCAP 文件中的数据包通过 UDP 协议广播到指定的网络目标。
+UDP 传输工具，用于将 PCAP 文件中的数据包通过 UDP 协议传输到指定的网络目标。
 
 ### 功能特点
 
 - 读取 PCAP 文件中的数据包
 - 按照原始时间间隔或自定义速率发送数据
-- 支持多目标广播
+- 支持多目标传输
 - 提供实时统计信息
 - 支持循环播放
 
@@ -59,20 +59,20 @@ UDP 广播工具，用于将 PCAP 文件中的数据包通过 UDP 协议广播�
 
 ```bash
 # 基本用法
-PcapFileUdpBroadcaster.exe -f <PCAP文件路径> -i <IP地址> -p <端口号>
+PcapFileUdpTransmitter.exe -f <PCAP文件路径> -i <IP地址> -p <端口号>
 
 # 指定回放速率
-PcapFileUdpBroadcaster.exe -f <PCAP文件路径> -i <IP地址> -p <端口号> -r <速率>
+PcapFileUdpTransmitter.exe -f <PCAP文件路径> -i <IP地址> -p <端口号> -r <速率>
 
 # 循环播放
-PcapFileUdpBroadcaster.exe -f <PCAP文件路径> -i <IP地址> -p <端口号> -l
+PcapFileUdpTransmitter.exe -f <PCAP文件路径> -i <IP地址> -p <端口号> -l
 ```
 
 ### 主要源代码
 
-- [Program.cs](mdc:source/PcapFile.IO.UdpBroadcaster/Program.cs) - 广播器主程序
-- [PcapReader.cs](mdc:source/PcapFile.IO.UdpBroadcaster/PcapReader.cs) - PCAP 文件读取器
-- [Statistics.cs](mdc:source/PcapFile.IO.UdpBroadcaster/Statistics.cs) - 统计信息收集
+- [Program.cs](mdc:source/PcapFile.IO.UdpTransmitter/Program.cs) - 传输器主程序
+- [PcapReader.cs](mdc:source/PcapFile.IO.UdpTransmitter/PcapReader.cs) - PCAP 文件读取器
+- [Statistics.cs](mdc:source/PcapFile.IO.UdpTransmitter/Statistics.cs) - 统计信息收集
 
 ## 通用说明
 
@@ -81,6 +81,6 @@ PcapFileUdpBroadcaster.exe -f <PCAP文件路径> -i <IP地址> -p <端口号> -l
 ### 注意事项
 
 - 工具使用的是不同的文件访问方式，与核心库的写入逻辑有所不同
-- 验证器和广播器主要作为辅助开发工具使用，不推荐在生产环境中使用
+- 验证器和传输器主要作为辅助开发工具使用，不推荐在生产环境中使用
 - 对于大文件处理，需要注意内存使用
 - 工具暂不支持加密或压缩的 PCAP 文件

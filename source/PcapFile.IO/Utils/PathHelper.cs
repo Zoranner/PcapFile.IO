@@ -12,7 +12,7 @@ namespace KimoTech.PcapFile.IO
         /// <summary>
         /// 获取PCAP数据目录路径
         /// </summary>
-        /// <param name="projFilePath">PROJ工程文件路径</param>
+        /// <param name="projFilePath">PROJ数据集文件路径</param>
         /// <returns>PCAP数据目录路径</returns>
         public static string GetPcapDirectoryPath(string projFilePath)
         {
@@ -34,7 +34,7 @@ namespace KimoTech.PcapFile.IO
         /// <summary>
         /// 根据时间戳创建PCAP文件路径
         /// </summary>
-        /// <param name="projFilePath">PROJ工程文件路径</param>
+        /// <param name="projFilePath">PROJ数据集文件路径</param>
         /// <param name="timestamp">时间戳</param>
         /// <returns>PCAP文件路径</returns>
         public static string GetPcapFilePath(string projFilePath, DateTime timestamp)
@@ -50,7 +50,7 @@ namespace KimoTech.PcapFile.IO
             // 确保目录存在
             Directory.CreateDirectory(pcapDirectory);
 
-            // 创建文件名：data_yyMMdd_HHmmss_fffffff.pcap
+            // 创建文件名: data_yyMMdd_HHmmss_fffffff.pcap
             var fileName =
                 $"data_{timestamp.ToString(PcapConstants.DEFAULT_FILE_NAME_FORMAT)}.pcap";
 
@@ -61,7 +61,7 @@ namespace KimoTech.PcapFile.IO
         /// <summary>
         /// 获取PCAP文件的完整路径
         /// </summary>
-        /// <param name="projFilePath">PROJ工程文件路径</param>
+        /// <param name="projFilePath">PROJ数据集文件路径</param>
         /// <param name="relativePath">PCAP文件相对路径</param>
         /// <returns>PCAP文件完整路径</returns>
         public static string GetFullPcapFilePath(string projFilePath, string relativePath)
@@ -86,7 +86,7 @@ namespace KimoTech.PcapFile.IO
         /// <summary>
         /// 获取最新的PCAP文件路径
         /// </summary>
-        /// <param name="projFilePath">PROJ工程文件路径</param>
+        /// <param name="projFilePath">PROJ数据集文件路径</param>
         /// <returns>最新的PCAP文件路径，如果不存在则返回null</returns>
         public static string GetLatestPcapFile(string projFilePath)
         {
@@ -120,7 +120,7 @@ namespace KimoTech.PcapFile.IO
         /// <summary>
         /// 清空PCAP目录
         /// </summary>
-        /// <param name="projFilePath">PROJ工程文件路径</param>
+        /// <param name="projFilePath">PROJ数据集文件路径</param>
         /// <returns>是否成功清空</returns>
         public static bool ClearPcapDirectory(string projFilePath)
         {

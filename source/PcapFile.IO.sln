@@ -9,7 +9,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PcapFile.IO.Example", "Pcap
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PcapFile.IO.Validator", "PcapFile.IO.Validator\PcapFile.IO.Validator.csproj", "{CE33AE71-2BDF-4B42-843A-BF5EBDFAA072}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PcapFile.IO.UdpBroadcaster", "PcapFile.IO.UdpBroadcaster\PcapFile.IO.UdpBroadcaster.csproj", "{8CD48B7F-E6AD-43E0-A735-00F5F0FA2BE8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PcapFile.IO.UdpTransmitter", "PcapFile.IO.UdpTransmitter\PcapFile.IO.UdpTransmitter.csproj", "{8CD48B7F-E6AD-43E0-A735-00F5F0FA2BE8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

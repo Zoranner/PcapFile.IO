@@ -11,23 +11,23 @@ PcapFile.IO 是一个专为数据记录设计的 .NET 库，基于自定义的 P
 
 ## 核心项目
 
-项目由以下几个主要组件构成：
+项目由以下几个主要组件构成: 
 
 1. **PcapFile.IO** - 核心库，包含文件格式定义和基本写入功能
-   - 路径：[source/PcapFile.IO/PcapFile.IO.csproj](mdc:source/PcapFile.IO/PcapFile.IO.csproj)
+   - 路径: [source/PcapFile.IO/PcapFile.IO.csproj](mdc:source/PcapFile.IO/PcapFile.IO.csproj)
 
 2. **PcapFile.IO.Example** - 示例项目，展示库的基本使用方法
-   - 路径：[source/PcapFile.IO.Example/PcapFile.IO.Example.csproj](mdc:source/PcapFile.IO.Example/PcapFile.IO.Example.csproj)
+   - 路径: [source/PcapFile.IO.Example/PcapFile.IO.Example.csproj](mdc:source/PcapFile.IO.Example/PcapFile.IO.Example.csproj)
 
 3. **PcapFile.IO.Validator** - 验证工具，用于检查PCAP文件是否符合规范并分析内容
-   - 路径：[source/PcapFile.IO.Validator/PcapFile.IO.Validator.csproj](mdc:source/PcapFile.IO.Validator/PcapFile.IO.Validator.csproj)
+   - 路径: [source/PcapFile.IO.Validator/PcapFile.IO.Validator.csproj](mdc:source/PcapFile.IO.Validator/PcapFile.IO.Validator.csproj)
 
-4. **PcapFile.IO.UdpBroadcaster** - UDP广播工具，用于将PCAP文件广播到多个目标
-   - 路径：[source/PcapFile.IO.UdpBroadcaster/PcapFile.IO.UdpBroadcaster.csproj](mdc:source/PcapFile.IO.UdpBroadcaster/PcapFile.IO.UdpBroadcaster.csproj)
+4. **PcapFile.IO.UdpTransmitter** - UDP传输工具，用于将PCAP文件传输到多个目标
+   - 路径: [source/PcapFile.IO.UdpTransmitter/PcapFile.IO.UdpTransmitter.csproj](mdc:source/PcapFile.IO.UdpTransmitter/PcapFile.IO.UdpTransmitter.csproj)
 
 ## 核心库结构 (PcapFile.IO)
 
-核心库按照以下命名空间组织：
+核心库按照以下命名空间组织: 
 
 1. **KimoTech.PcapFile.IO** - 根命名空间，包含主要接口和类
    - [Interfaces/](mdc:source/PcapFile.IO/Interfaces) - 所有接口定义
@@ -56,7 +56,7 @@ PcapFile.IO 是一个专为数据记录设计的 .NET 库，基于自定义的 P
 
 ### 配置和工具
 
-- [FileVersionConfig.cs](mdc:source/PcapFile.IO/Configuration/FileVersionConfig.cs) - 文件版本配置，定义了常量和默认值
+- [PcapConstants.cs](mdc:source/PcapFile.IO/Configuration/PcapConstants.cs) - 文件版本配置，定义了常量和默认值
 
 ## 代码规范
 

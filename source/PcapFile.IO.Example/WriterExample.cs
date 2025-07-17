@@ -9,7 +9,7 @@ namespace KimoTech.PcapFile.IO.Example
         /// 写入测试数据包到PCAP文件
         /// </summary>
         /// <param name="outputDirectory">输出目录</param>
-        /// <param name="projectName">工程名称</param>
+        /// <param name="projectName">数据集名称</param>
         /// <param name="packetCount">数据包数量</param>
         /// <param name="packetSize">每个数据包大小</param>
         /// <returns>写入的数据包信息列表</returns>
@@ -48,9 +48,9 @@ namespace KimoTech.PcapFile.IO.Example
             {
                 using var writer = new PcapWriter();
 
-                // 创建PCAP工程
+                // 创建PCAP数据集
                 writer.Create(outputDirectory, projectName);
-                Console.WriteLine($"PCAP工程已创建: {writer.OutputDirectory}");
+                Console.WriteLine($"PCAP数据集已创建: {writer.OutputDirectory}");
 
                 Console.WriteLine($"开始写入 {packetCount} 个数据包...");
                 var startTime = DateTime.Now;

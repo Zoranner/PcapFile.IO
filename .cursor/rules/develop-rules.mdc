@@ -9,7 +9,7 @@ alwaysApply: true
 
 ### 通用规范
 - 遵循 C# 编码规范
-- 支持多目标框架：.NET Standard 2.1、.NET 6.0、.NET 8.0
+- 支持多目标框架: .NET Standard 2.1、.NET 6.0、.NET 8.0
 - 文件编码统一使用 UTF-8
 - 缩进使用 4 个空格
 - 行长度限制在 120 个字符以内

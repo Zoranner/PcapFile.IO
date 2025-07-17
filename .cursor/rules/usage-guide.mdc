@@ -9,10 +9,10 @@ alwaysApply: true
 
 ## 基本使用流程
 
-使用 PcapFile.IO 进行数据写入的基本流程如下：
+使用 PcapFile.IO 进行数据写入的基本流程如下: 
 
 1. 创建 `PcapWriter` 实例
-2. 调用 `Create` 方法指定基础目录和工程名称
+2. 调用 `Create` 方法指定基础目录和数据集名称
 3. 创建 `DataPacket` 对象并写入数据
 4. 完成后关闭写入器
 
@@ -26,7 +26,7 @@ using KimoTech.PcapFile.IO;
 // 创建数据写入器
 using var writer = new PcapWriter();
 
-// 创建新数据工程目录 - 数据将存储在 "data/my_project" 目录中
+// 创建新数据集目录 - 数据将存储在 "data/my_project" 目录中
 writer.Create("data", "my_project");
 
 // 创建数据包
@@ -76,13 +76,13 @@ writer.WritePackets(packets);
 
 ### 目录管理
 
-- 使用有意义的工程名称，便于数据组织和查找
-- 一个工程目录对应一类相关数据
+- 使用有意义的数据集名称，便于数据组织和查找
+- 一个数据集目录对应一类相关数据
 - 确保基础目录有足够的磁盘空间
 
 ## 数据验证
 
-使用 PcapFile.IO.Validator 工具验证生成的数据文件：
+使用 PcapFile.IO.Validator 工具验证生成的数据文件: 
 
 ```bash
 # 验证单个文件
@@ -103,5 +103,5 @@ PcapFileValidator.exe <PCAP文件路径> --all --preview
 - 数据包大小不能超过 30MB
 - 时间戳精度为纳秒级
 - 所有时间均使用 UTC 格式
-- 工程名称建议使用字母、数字和下划线
+- 数据集名称建议使用字母、数字和下划线
 - 库专注于写入功能，不支持读取操作

@@ -7,7 +7,7 @@ PcapFile.IO 是一个用于数据记录的 .NET 库，基于自定义的 PCAP �
 - 支持多源异构数据的统一存储和管理
 - 提供精确的时间戳机制（纳秒级精度）
 - 自动创建和管理数据文件，支持时间戳命名
-- 根据数据工程名称组织数据文件
+- 根据数据集名称组织数据文件
 - 灵活的数据格式，支持任意字节数组存储
 - 简洁易用的 API 接口
 - 跨平台支持（Windows、Linux、macOS）
@@ -18,22 +18,22 @@ PcapFile.IO 是一个用于数据记录的 .NET 库，基于自定义的 PCAP �
 - **PcapFile.IO**: 核心库，包含文件格式定义和基本写入功能
 - **PcapFile.IO.Example**: 示例项目，展示库的基本使用方法
 - **PcapFile.IO.Validator**: 验证工具，用于检查PCAP文件是否符合规范并分析内容
-- **PcapFile.IO.UdpBroadcaster**: UDP广播工具，用于将PCAP文件广播到多个目标
+- **PcapFile.IO.UdpTransmitter**: UDP传输工具，用于将PCAP文件传输到多个目标
 
 ## 文件格式
 
 ### 数据文件 (.pcap)
-- 位于指定的数据工程目录中
-- 文件命名格式：data_yyMMdd_HHmmss_fffffff.pcap
-- 文件头：包含魔数、版本号等基本信息
-- 数据包：包含时间戳、长度、校验和等元数据，以及实际数据负载
+- 位于指定的数据集目录中
+- 文件命名格式: data_yyMMdd_HHmmss_fffffff.pcap
+- 文件头: 包含魔数、版本号等基本信息
+- 数据包: 包含时间戳、长度、校验和等元数据，以及实际数据负载
 - 支持多文件存储，自动按时间或大小分割
 
 ## 目录结构
 
 ```
 /path/to/base-directory/
-└── project-name/                  # 数据工程目录（由工程名称指定）
+└── project-name/                  # 数据集目录（由数据集名称指定）
     ├── data_240321_153045_123456789.pcap  # 数据文件1
     ├── data_240321_154012_456789012.pcap  # 数据文件2
     └── data_240321_155130_789012345.pcap  # 数据文件3
@@ -43,7 +43,7 @@ PcapFile.IO 是一个用于数据记录的 .NET 库，基于自定义的 PCAP �
 
 ### 安装
 
-通过 NuGet 包管理器安装：
+通过 NuGet 包管理器安装: 
 
 ```bash
 dotnet add package PcapFile.IO
@@ -57,7 +57,7 @@ using KimoTech.PcapFile.IO;
 // 创建数据写入器
 using var writer = new PcapWriter();
 
-// 创建新数据工程目录 - 数据将存储在 "data/my_project" 目录中
+// 创建新数据集目录 - 数据将存储在 "data/my_project" 目录中
 writer.Create("data", "my_project");
 
 // 创建数据包
@@ -87,7 +87,7 @@ writer.Close();
 
 ### 验证PCAP文件
 
-使用PcapFileValidator工具验证生成的PCAP文件是否符合规范，并提供详细分析：
+使用PcapFileValidator工具验证生成的PCAP文件是否符合规范，并提供详细分析: 
 
 ```bash
 # 验证单个文件
@@ -107,7 +107,7 @@ PcapFileValidator.exe <PCAP文件路径> --all --preview
 
 - [x] 基础文件写入功能
 - [x] 时间戳精确记录
-- [x] 按工程名组织数据文件
+- [x] 按数据集名组织数据文件
 - [x] 纳秒级时间精度支持
 - [x] 文件格式验证工具
 
@@ -118,13 +118,13 @@ PcapFileValidator.exe <PCAP文件路径> --all --preview
 
 ## 文档
 
-- [协议规范](./PROTOCOL.md)：完整的数据格式协议文档
-- [验证工具](./source/PcapFile.IO.Validator/README.md)：PCAP文件验证器使用说明
-- API 文档：[即将推出]
+- [协议规范](./PROTOCOL.md): 完整的数据格式协议文档
+- [验证工具](./source/PcapFile.IO.Validator/README.md): PCAP文件验证器使用说明
+- API 文档: [即将推出]
 
 ## 贡献指南
 
-欢迎提交 Issue 和 Pull Request 来帮助改进这个项目。在提交代码前，请确保：
+欢迎提交 Issue 和 Pull Request 来帮助改进这个项目。在提交代码前，请确保: 
 
 1. 代码符合项目的编码规范
 2. 添加了适当的单元测试

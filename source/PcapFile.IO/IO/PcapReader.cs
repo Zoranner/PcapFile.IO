@@ -36,7 +36,7 @@ namespace KimoTech.PcapFile.IO
         private int _CurrentFileIndex;
 
         /// <summary>
-        /// 工程目录中的所有PCAP文件列表
+        /// 数据集目录中的所有PCAP文件列表
         /// </summary>
         private List<string> _ProjectFiles;
 
@@ -141,10 +141,10 @@ namespace KimoTech.PcapFile.IO
 
                 if (string.IsNullOrEmpty(projectName))
                 {
-                    throw new ArgumentException("数据工程名称不能为空", nameof(projectName));
+                    throw new ArgumentException("数据集名称不能为空", nameof(projectName));
                 }
 
-                // 保存基础目录和工程名称
+                // 保存基础目录和数据集名称
                 _BaseDirectory = baseDirectory;
                 ProjectName = projectName;
 
@@ -154,20 +154,20 @@ namespace KimoTech.PcapFile.IO
                     throw new DirectoryNotFoundException($"基础目录不存在: {baseDirectory}");
                 }
 
-                // 检查数据工程目录
+                // 检查数据集目录
                 InputDirectory = Path.Combine(baseDirectory, projectName);
                 if (!Directory.Exists(InputDirectory))
                 {
-                    throw new DirectoryNotFoundException($"数据工程目录不存在: {InputDirectory}");
+                    throw new DirectoryNotFoundException($"数据集目录不存在: {InputDirectory}");
                 }
 
-                // 扫描工程目录中的PCAP文件
+                // 扫描数据集目录中的PCAP文件
                 ScanProjectFiles();
 
                 if (_ProjectFiles.Count == 0)
                 {
                     throw new InvalidOperationException(
-                        $"在工程目录中未找到任何PCAP文件: {InputDirectory}"
+                        $"在数据集目录中未找到任何PCAP文件: {InputDirectory}"
                     );
                 }
 
@@ -180,7 +180,7 @@ namespace KimoTech.PcapFile.IO
             catch (Exception ex)
             {
                 Close();
-                throw new IOException($"打开数据工程失败: {ex.Message}", ex);
+                throw new IOException($"打开数据集失败: {ex.Message}", ex);
             }
         }
 
@@ -393,7 +393,7 @@ namespace KimoTech.PcapFile.IO
         }
 
         /// <summary>
-        /// 扫描工程目录中的PCAP文件
+        /// 扫描数据集目录中的PCAP文件
         /// </summary>
         private void ScanProjectFiles()
         {

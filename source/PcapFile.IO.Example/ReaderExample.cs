@@ -6,10 +6,10 @@ namespace KimoTech.PcapFile.IO.Example
     public static class ReaderExample
     {
         /// <summary>
-        /// 读取PCAP工程目录中的所有数据包
+        /// 读取PCAP数据集目录中的所有数据包
         /// </summary>
         /// <param name="inputDirectory">输入目录</param>
-        /// <param name="projectName">工程名称</param>
+        /// <param name="projectName">数据集名称</param>
         /// <returns>读取的数据包信息列表</returns>
         public static List<PacketInfo> ReadTestData(string inputDirectory, string projectName)
         {
@@ -21,17 +21,17 @@ namespace KimoTech.PcapFile.IO.Example
             {
                 using var reader = new PcapReader();
 
-                // 打开PCAP工程目录
+                // 打开PCAP数据集目录
                 if (!reader.Open(inputDirectory, projectName))
                 {
                     Console.WriteLine(
-                        $"无法打开工程目录: {Path.Combine(inputDirectory, projectName)}"
+                        $"无法打开数据集目录: {Path.Combine(inputDirectory, projectName)}"
                     );
                     return readPackets;
                 }
 
-                Console.WriteLine($"成功打开工程: {reader.ProjectName}");
-                Console.WriteLine($"工程目录: {reader.InputDirectory}");
+                Console.WriteLine($"成功打开数据集: {reader.ProjectName}");
+                Console.WriteLine($"数据集目录: {reader.InputDirectory}");
                 Console.WriteLine($"发现的文件数量: {reader.GetProjectFiles().Count()}");
                 Console.WriteLine($"总数据包数量: {reader.TotalPacketCount}");
 

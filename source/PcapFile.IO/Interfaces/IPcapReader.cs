@@ -31,7 +31,7 @@ namespace KimoTech.PcapFile.IO
         bool IsOpen { get; }
 
         /// <summary>
-        /// 获取数据工程名称
+        /// 获取数据集名称
         /// </summary>
         string ProjectName { get; }
 
@@ -63,7 +63,7 @@ namespace KimoTech.PcapFile.IO
         /// 打开现有数据目录
         /// </summary>
         /// <param name="baseDirectory">基础目录路径</param>
-        /// <param name="projectName">数据工程名称</param>
+        /// <param name="projectName">数据集名称</param>
         /// <returns>是否成功打开</returns>
         bool Open(string baseDirectory, string projectName);
 
@@ -111,7 +111,7 @@ namespace KimoTech.PcapFile.IO
         bool SeekToPacket(long packetIndex);
 
         /// <summary>
-        /// 获取工程目录中的所有PCAP文件列表
+        /// 获取数据集目录中的所有PCAP文件列表
         /// </summary>
         /// <returns>PCAP文件路径列表</returns>
         IEnumerable<string> GetProjectFiles();
