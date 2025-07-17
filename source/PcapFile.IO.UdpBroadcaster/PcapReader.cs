@@ -42,7 +42,7 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
                 FileMode.Open,
                 FileAccess.Read,
                 FileShare.Read,
-                FileVersionConfig.MAX_BUFFER_SIZE
+                PcapConstants.MAX_BUFFER_SIZE
             );
 
             _binaryReader = new BinaryReader(_fileStream);
@@ -87,8 +87,8 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
 
                 // 验证魔数
                 if (
-                    _fileHeader.MagicNumber != FileVersionConfig.PCAP_MAGIC_NUMBER
-                    && _fileHeader.MagicNumber != FileVersionConfig.PROJ_MAGIC_NUMBER
+                    _fileHeader.MagicNumber != PcapConstants.PCAP_MAGIC_NUMBER
+                    && _fileHeader.MagicNumber != PcapConstants.PROJ_MAGIC_NUMBER
                 )
                 {
                     throw new InvalidDataException("无效的PCAP文件格式");
@@ -132,7 +132,7 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
                 }
 
                 for (
-                    int i = 0;
+                    var i = 0;
                     i < batchSize
                         && position < fileSize
                         && !cancellationToken.IsCancellationRequested;
@@ -153,7 +153,7 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
 
                         // 验证包长度
                         if (
-                            header.PacketLength > FileVersionConfig.MAX_PACKET_SIZE
+                            header.PacketLength > PcapConstants.MAX_PACKET_SIZE
                             || header.PacketLength == 0
                         )
                         {

@@ -15,7 +15,7 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
         private readonly UdpClient _udpClient;
         private readonly IPEndPoint _endPoint;
         private bool _isDisposed;
-        
+
         // UDP包的最大大小限制（约64KB）
         private const int MAX_UDP_PACKET_SIZE = 60000;
 
@@ -45,7 +45,7 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
 
             // 使用PcapFile.IO库中定义的缓冲区大小
             // 缓冲区大小为MAX_BUFFER_SIZE的一半，确保发送缓冲区足够大
-            _udpClient.Client.SendBufferSize = FileVersionConfig.MAX_BUFFER_SIZE / 2;
+            _udpClient.Client.SendBufferSize = PcapConstants.MAX_BUFFER_SIZE / 2;
         }
 
         /// <summary>
@@ -128,7 +128,7 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
                 return SendLargePacket(data);
             }
         }
-        
+
         /// <summary>
         /// 发送大数据包（同步）
         /// </summary>
@@ -136,31 +136,31 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
         /// <returns>发送的总字节数</returns>
         private int SendLargePacket(byte[] data)
         {
-            int totalSent = 0;
-            int offset = 0;
-            
+            var totalSent = 0;
+            var offset = 0;
+
             // 每次发送不超过最大包大小的数据
             while (offset < data.Length)
             {
                 // 计算当前片段大小
-                int chunkSize = Math.Min(MAX_UDP_PACKET_SIZE, data.Length - offset);
-                
+                var chunkSize = Math.Min(MAX_UDP_PACKET_SIZE, data.Length - offset);
+
                 // 创建片段数据
-                byte[] chunk = new byte[chunkSize];
+                var chunk = new byte[chunkSize];
                 Array.Copy(data, offset, chunk, 0, chunkSize);
-                
+
                 // 发送片段
-                int sent = _udpClient.Send(chunk, chunk.Length, _endPoint);
+                var sent = _udpClient.Send(chunk, chunk.Length, _endPoint);
                 totalSent += sent;
                 offset += chunkSize;
-                
+
                 // 小延迟避免网络拥塞
                 Thread.Sleep(1);
             }
-            
+
             return totalSent;
         }
-        
+
         /// <summary>
         /// 发送大数据包（异步）
         /// </summary>
@@ -169,31 +169,31 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
         /// <returns>发送的总字节数</returns>
         private async Task<int> SendLargePacketAsync(byte[] data, CancellationToken cancellationToken)
         {
-            int totalSent = 0;
-            int offset = 0;
-            
+            var totalSent = 0;
+            var offset = 0;
+
             // 每次发送不超过最大包大小的数据
             while (offset < data.Length && !cancellationToken.IsCancellationRequested)
             {
                 // 计算当前片段大小
-                int chunkSize = Math.Min(MAX_UDP_PACKET_SIZE, data.Length - offset);
-                
+                var chunkSize = Math.Min(MAX_UDP_PACKET_SIZE, data.Length - offset);
+
                 // 创建片段数据
-                byte[] chunk = new byte[chunkSize];
+                var chunk = new byte[chunkSize];
                 Array.Copy(data, offset, chunk, 0, chunkSize);
-                
+
                 // 发送片段
-                int sent = await _udpClient
+                var sent = await _udpClient
                     .SendAsync(chunk, chunk.Length, _endPoint)
                     .WaitAsync(cancellationToken);
-                
+
                 totalSent += sent;
                 offset += chunkSize;
-                
+
                 // 小延迟避免网络拥塞
                 await Task.Delay(1, cancellationToken);
             }
-            
+
             return totalSent;
         }
 
