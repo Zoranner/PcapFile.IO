@@ -1,94 +1,87 @@
-using System;
 using System.Collections.Concurrent;
-using System.Threading;
-using System.Threading.Tasks;
-using KimoTech.PcapFile.IO;
 
-namespace KimoTech.PcapFile.IO.UdpBroadcaster
+namespace KimoTech.PcapFile.IO.UdpTransmitter
 {
     /// <summary>
-    /// 广播协调器类，负责协调读取和发送线程，实现多线程处理
+    /// 传输协调器类，负责协调读取和发送线程，实现多线程处理
     /// </summary>
-    public class BroadcastCoordinator : IDisposable
+    public class UdpCoordinator : IDisposable
     {
-        private readonly UdpBroadcaster _broadcaster;
-        private readonly int _playbackSpeed;
-        private readonly int _bufferSize;
-        private readonly bool _verboseMode;
-        private readonly BlockingCollection<DataPacket> _packetQueue;
-        private readonly CancellationTokenSource _cancellationSource;
-        private readonly Statistics _statistics;
-
-        private Task _readerTask;
-        private Task _broadcasterTask;
-        private PcapReader _reader;
-        private bool _isDisposed;
+        private readonly UdpTransmitter _Transmitter;
+        private readonly int _PlaybackSpeed;
+        private readonly int _BufferSize;
+        private readonly bool _VerboseMode;
+        private readonly BlockingCollection<DataPacket> _PacketQueue;
+        private readonly CancellationTokenSource _CancellationSource;
+        private Task _ReaderTask;
+        private Task _TransmitterTask;
+        private IPcapReader _Reader;
+        private bool _IsDisposed;
 
         /// <summary>
         /// 是否正在运行
         /// </summary>
         public bool IsRunning =>
-            (_readerTask != null && !_readerTask.IsCompleted)
-            || (_broadcasterTask != null && !_broadcasterTask.IsCompleted);
+            _ReaderTask != null && !_ReaderTask.IsCompleted
+            || _TransmitterTask != null && !_TransmitterTask.IsCompleted;
 
         /// <summary>
         /// 统计信息
         /// </summary>
-        public Statistics Statistics => _statistics;
+        public Statistics Statistics { get; }
 
         /// <summary>
         /// 构造函数
         /// </summary>
-        /// <param name="broadcaster">UDP广播器</param>
+        /// <param name="transmitter">UDP传输器</param>
         /// <param name="playbackSpeed">播放速度</param>
         /// <param name="bufferSize">缓冲区大小</param>
         /// <param name="verboseMode">是否详细模式</param>
-        public BroadcastCoordinator(
-            UdpBroadcaster broadcaster,
+        public UdpCoordinator(
+            UdpTransmitter transmitter,
             int playbackSpeed = 1,
             int bufferSize = 100,
             bool verboseMode = false
         )
         {
-            _broadcaster = broadcaster ?? throw new ArgumentNullException(nameof(broadcaster));
-            _playbackSpeed = playbackSpeed > 0 ? playbackSpeed : 1;
-            _bufferSize = bufferSize > 0 ? bufferSize : 100;
-            _verboseMode = verboseMode;
+            _Transmitter = transmitter ?? throw new ArgumentNullException(nameof(transmitter));
+            _PlaybackSpeed = playbackSpeed > 0 ? playbackSpeed : 1;
+            _BufferSize = bufferSize > 0 ? bufferSize : 100;
+            _VerboseMode = verboseMode;
 
-            _packetQueue = new BlockingCollection<DataPacket>(_bufferSize);
-            _cancellationSource = new CancellationTokenSource();
-            _statistics = new Statistics();
+            _PacketQueue = new BlockingCollection<DataPacket>(_BufferSize);
+            _CancellationSource = new CancellationTokenSource();
+            Statistics = new Statistics();
         }
 
         /// <summary>
         /// 开始处理
         /// </summary>
         /// <param name="reader">PCAP读取器</param>
-        public void Start(PcapReader reader)
+        public void Start(IPcapReader reader)
         {
             if (IsRunning)
             {
                 throw new InvalidOperationException("协调器已经在运行");
             }
 
-            _reader = reader ?? throw new ArgumentNullException(nameof(reader));
+            _Reader = reader ?? throw new ArgumentNullException(nameof(reader));
 
             // 重置并启动统计
-            _statistics.Reset();
-            _statistics.Start();
+            Statistics.Reset();
+            Statistics.Start();
 
-            // 读取文件头
-            var header = _reader.ReadHeader();
-            if (_verboseMode)
+            if (_VerboseMode)
             {
-                Console.WriteLine($"PCAP文件版本: {header.MajorVersion}.{header.MinorVersion}");
+                Console.WriteLine($"已打开PCAP文件: {_Reader.FilePath}");
+                Console.WriteLine($"总数据包数量: {_Reader.TotalPacketCount}");
             }
 
             // 启动读取线程
-            _readerTask = Task.Run(() => ReaderThreadProc(_cancellationSource.Token));
+            _ReaderTask = Task.Run(() => ReaderThreadProc(_CancellationSource.Token));
 
-            // 启动广播线程
-            _broadcasterTask = Task.Run(() => BroadcasterThreadProc(_cancellationSource.Token));
+            // 启动传输线程
+            _TransmitterTask = Task.Run(() => TransmitterThreadProc(_CancellationSource.Token));
         }
 
         /// <summary>
@@ -99,25 +92,25 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
             try
             {
                 // 取消所有操作
-                _cancellationSource.Cancel();
+                _CancellationSource.Cancel();
 
                 // 等待任务完成
-                if (_readerTask != null)
+                if (_ReaderTask != null)
                 {
-                    await _readerTask;
+                    await _ReaderTask;
                 }
 
-                if (_broadcasterTask != null)
+                if (_TransmitterTask != null)
                 {
-                    await _broadcasterTask;
+                    await _TransmitterTask;
                 }
 
                 // 停止统计
-                _statistics.Stop();
+                Statistics.Stop();
 
                 // 清空队列
-                _packetQueue.CompleteAdding();
-                while (_packetQueue.TryTake(out _)) { }
+                _PacketQueue.CompleteAdding();
+                while (_PacketQueue.TryTake(out _)) { }
             }
             catch (OperationCanceledException)
             {
@@ -125,7 +118,7 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
             }
             catch (Exception ex)
             {
-                if (_verboseMode)
+                if (_VerboseMode)
                 {
                     Console.WriteLine($"停止协调器时出错: {ex.Message}");
                 }
@@ -135,7 +128,7 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
         /// <summary>
         /// 读取线程处理过程
         /// </summary>
-        private async void ReaderThreadProc(CancellationToken cancellationToken)
+        private void ReaderThreadProc(CancellationToken cancellationToken)
         {
             try
             {
@@ -145,7 +138,7 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     // 读取一批数据包
-                    var packets = await _reader.ReadPacketBatchAsync(batchSize, cancellationToken);
+                    var packets = _Reader.ReadPackets(batchSize).ToList();
 
                     // 如果没有数据包，说明已经读取完毕
                     if (packets.Count == 0)
@@ -156,15 +149,15 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
                     // 添加到队列
                     foreach (var packet in packets)
                     {
-                        _packetQueue.Add(packet, cancellationToken);
+                        _PacketQueue.Add(packet, cancellationToken);
                     }
 
                     // 更新队列大小统计
-                    _statistics.QueueSize = _packetQueue.Count;
+                    Statistics.QueueSize = _PacketQueue.Count;
                 }
 
                 // 标记队列已完成添加
-                _packetQueue.CompleteAdding();
+                _PacketQueue.CompleteAdding();
             }
             catch (OperationCanceledException)
             {
@@ -172,36 +165,36 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
             }
             catch (Exception ex)
             {
-                if (_verboseMode)
+                if (_VerboseMode)
                 {
                     Console.WriteLine($"读取线程出错: {ex.Message}");
                 }
 
-                // 标记队列已完成添加，以便广播线程退出
-                _packetQueue.CompleteAdding();
+                // 标记队列已完成添加，以便传输线程退出
+                _PacketQueue.CompleteAdding();
             }
         }
 
         /// <summary>
-        /// 广播线程处理过程
+        /// 传输线程处理过程
         /// </summary>
-        private void BroadcasterThreadProc(CancellationToken cancellationToken)
+        private void TransmitterThreadProc(CancellationToken cancellationToken)
         {
             try
             {
                 DateTime? lastPacketTime = null;
 
                 // 处理队列中的数据包
-                while (!_packetQueue.IsCompleted && !cancellationToken.IsCancellationRequested)
+                while (!_PacketQueue.IsCompleted && !cancellationToken.IsCancellationRequested)
                 {
                     // 尝试从队列中获取数据包
-                    if (_packetQueue.TryTake(out var packet, 100, cancellationToken))
+                    if (_PacketQueue.TryTake(out var packet, 100, cancellationToken))
                     {
                         // 计算延迟
                         if (lastPacketTime != null)
                         {
                             var delay = packet.CaptureTime - lastPacketTime.Value;
-                            var delayMs = (int)(delay.TotalMilliseconds / _playbackSpeed);
+                            var delayMs = (int)(delay.TotalMilliseconds / _PlaybackSpeed);
 
                             if (delayMs > 0)
                             {
@@ -212,15 +205,15 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
 
                         // 验证校验和 - 使用ChecksumCalculator计算校验和
                         var calculatedChecksum = ChecksumCalculator.CalculateCrc32(packet.Data);
-                        var checksumValid = calculatedChecksum == packet.Checksum;
+                        var checksumValid = calculatedChecksum == packet.Header.Checksum;
 
                         // 发送数据包
-                        _broadcaster.SendPacket(packet);
+                        _Transmitter.SendPacket(packet);
 
                         // 更新状态
                         lastPacketTime = packet.CaptureTime;
-                        _statistics.UpdatePacketProcessed(packet.Data.Length, checksumValid);
-                        _statistics.QueueSize = _packetQueue.Count;
+                        Statistics.UpdatePacketProcessed(packet.Data.Count, checksumValid);
+                        Statistics.QueueSize = _PacketQueue.Count;
                     }
                 }
             }
@@ -230,15 +223,15 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
             }
             catch (Exception ex)
             {
-                if (_verboseMode)
+                if (_VerboseMode)
                 {
-                    Console.WriteLine($"广播线程出错: {ex.Message}");
+                    Console.WriteLine($"传输线程出错: {ex.Message}");
                 }
             }
             finally
             {
                 // 停止统计
-                _statistics.Stop();
+                Statistics.Stop();
             }
         }
 
@@ -257,7 +250,7 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
         /// <param name="disposing">是否释放托管资源</param>
         protected virtual void Dispose(bool disposing)
         {
-            if (!_isDisposed)
+            if (!_IsDisposed)
             {
                 if (disposing)
                 {
@@ -265,12 +258,12 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
                     StopAsync().Wait();
 
                     // 释放资源
-                    _cancellationSource?.Dispose();
-                    _packetQueue?.Dispose();
-                    _reader?.Dispose();
+                    _CancellationSource?.Dispose();
+                    _PacketQueue?.Dispose();
+                    _Reader?.Dispose();
                 }
 
-                _isDisposed = true;
+                _IsDisposed = true;
             }
         }
     }

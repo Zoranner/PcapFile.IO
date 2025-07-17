@@ -3,17 +3,17 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 
-namespace KimoTech.PcapFile.IO.UdpBroadcaster
+namespace KimoTech.PcapFile.IO.UdpTransmitter
 {
     /// <summary>
-    /// 统计信息类，收集和显示广播过程中的性能统计数据
+    /// 统计信息类，收集和显示传输过程中的性能统计数据
     /// </summary>
     public class Statistics
     {
-        private readonly object _lock = new object();
-        private readonly Stopwatch _stopwatch = new Stopwatch();
-        private long _lastProcessedPackets = 0;
-        private DateTime _lastSpeedCalculationTime = DateTime.Now;
+        private readonly object _Lock = new object();
+        private readonly Stopwatch _Stopwatch = new Stopwatch();
+        private long _LastProcessedPackets = 0;
+        private DateTime _LastSpeedCalculationTime = DateTime.Now;
 
         /// <summary>
         /// 已处理数据包数量
@@ -53,7 +53,7 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
         /// <summary>
         /// 运行时间
         /// </summary>
-        public TimeSpan ElapsedTime => _stopwatch.Elapsed;
+        public TimeSpan ElapsedTime => _Stopwatch.Elapsed;
 
         /// <summary>
         /// 构造函数
@@ -68,9 +68,9 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
         /// </summary>
         public void Start()
         {
-            lock (_lock)
+            lock (_Lock)
             {
-                _stopwatch.Start();
+                _Stopwatch.Start();
             }
         }
 
@@ -79,9 +79,9 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
         /// </summary>
         public void Stop()
         {
-            lock (_lock)
+            lock (_Lock)
             {
-                _stopwatch.Stop();
+                _Stopwatch.Stop();
             }
         }
 
@@ -90,7 +90,7 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
         /// </summary>
         public void Reset()
         {
-            lock (_lock)
+            lock (_Lock)
             {
                 ProcessedPackets = 0;
                 ProcessedBytes = 0;
@@ -99,9 +99,9 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
                 PacketsPerSecond = 0;
                 MinPacketSize = long.MaxValue;
                 MaxPacketSize = 0;
-                _lastProcessedPackets = 0;
-                _lastSpeedCalculationTime = DateTime.Now;
-                _stopwatch.Reset();
+                _LastProcessedPackets = 0;
+                _LastSpeedCalculationTime = DateTime.Now;
+                _Stopwatch.Reset();
             }
         }
 
@@ -112,7 +112,7 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
         /// <param name="isChecksumValid">校验和是否有效</param>
         public void UpdatePacketProcessed(long packetSize, bool isChecksumValid)
         {
-            lock (_lock)
+            lock (_Lock)
             {
                 ProcessedPackets++;
                 ProcessedBytes += packetSize;
@@ -135,13 +135,13 @@ namespace KimoTech.PcapFile.IO.UdpBroadcaster
 
                 // 每秒更新一次速度统计
                 var now = DateTime.Now;
-                var timeSpan = now - _lastSpeedCalculationTime;
+                var timeSpan = now - _LastSpeedCalculationTime;
                 if (timeSpan.TotalSeconds >= 1)
                 {
-                    var packetDelta = ProcessedPackets - _lastProcessedPackets;
+                    var packetDelta = ProcessedPackets - _LastProcessedPackets;
                     PacketsPerSecond = packetDelta / timeSpan.TotalSeconds;
-                    _lastProcessedPackets = ProcessedPackets;
-                    _lastSpeedCalculationTime = now;
+                    _LastProcessedPackets = ProcessedPackets;
+                    _LastSpeedCalculationTime = now;
                 }
             }
         }

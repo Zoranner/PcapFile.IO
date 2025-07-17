@@ -1,17 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
-    <RootNamespace>KimoTech.PcapFile.IO.UdpBroadcaster</RootNamespace>
+    <RootNamespace>KimoTech.PcapFile.IO.UdpTransmitter</RootNamespace>
     <Authors>KimoTech</Authors>
-    <Description>PCAP文件UDP广播工具</Description>
+    <Description>PCAP文件UDP传输器</Description>
   </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\PcapFile.IO\PcapFile.IO.csproj" />
   </ItemGroup>
-
 </Project>
